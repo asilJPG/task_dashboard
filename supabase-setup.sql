@@ -21,14 +21,7 @@ INSERT INTO tb_profiles (username, password, name, avatar, color, is_admin)
 VALUES ('admin', 'adminpassword', 'Администратор', '👑', '#f59e0b', true)
 ON CONFLICT (username) DO NOTHING;
 
--- Seed initial test employees
--- Passwords set to '123456' by default
-INSERT INTO tb_profiles (username, password, name, avatar, color, is_admin)
-VALUES 
-  ('asyl', '123456', 'Асыл', '👨‍💻', '#7c3aed', false),
-  ('marat', '123456', 'Марат', '🧑‍💼', '#3b82f6', false),
-  ('aigerim', '123456', 'Айгерим', '👩‍🔬', '#ec4899', false)
-ON CONFLICT (username) DO NOTHING;
+
 
 -- 2. Tasks table
 CREATE TABLE IF NOT EXISTS tb_tasks (
