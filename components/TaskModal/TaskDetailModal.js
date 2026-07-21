@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { formatRelativeTime, getPriorityLabel, getStatusLabel } from '@/lib/utils';
 
 export default function TaskDetailModal({ 
@@ -8,6 +8,13 @@ export default function TaskDetailModal({
   onEdit, onDelete, onComment, onStatusChange, onProgressChange, onTogglePin 
 }) {
   const [commentText, setCommentText] = useState('');
+  const [localProgress, setLocalProgress] = useState(task?.progress || 0);
+
+  useEffect(() => {
+    if (task) {
+      setLocalProgress(task.progress || 0);
+    }
+  }, [task?.progress]);
 
   if (!isOpen || !task) return null;
 
@@ -91,13 +98,15 @@ export default function TaskDetailModal({
           )}
 
           <div className="detail-row" style={{ marginBottom: '20px' }}>
-            <span className="detail-label">Прогресс ({task.progress || 0}%):</span>
+            <span className="detail-label">Прогресс ({localProgress}%):</span>
             <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '12px' }}>
               <input 
                 type="range" 
                 min="0" max="100" 
-                value={task.progress || 0}
-                onChange={(e) => onProgressChange(task.id, Number(e.target.value))}
+                value={localProgress}
+                onChange={(e) => setLocalProgress(Number(e.target.value))}
+                onMouseUp={() => onProgressChange(task.id, localProgress)}
+                onTouchEnd={() => onProgressChange(task.id, localProgress)}
                 className="form-range"
                 style={{ flex: 1, margin: 0 }}
               />
