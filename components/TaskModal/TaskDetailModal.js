@@ -5,7 +5,8 @@ import { formatRelativeTime, getPriorityLabel, getStatusLabel } from '@/lib/util
 
 export default function TaskDetailModal({ 
   isOpen, onClose, task, profiles = [], comments = [], history = [], 
-  onEdit, onDelete, onComment, onStatusChange, onProgressChange, onTogglePin 
+  onEdit, onDelete, onComment, onStatusChange, onProgressChange, onTogglePin,
+  currentUserId
 }) {
   const [commentText, setCommentText] = useState('');
   const [localProgress, setLocalProgress] = useState(task?.progress || 0);
@@ -20,6 +21,9 @@ export default function TaskDetailModal({
 
   const creator = profiles.find(p => p.id === task.created_by);
   const assignee = profiles.find(p => p.id === task.assigned_to);
+
+  const currentUserProfile = profiles.find(p => p.id === currentUserId);
+  const canEditOrDelete = task.created_by === currentUserId || currentUserProfile?.is_admin;
 
   const handleCommentSubmit = () => {
     if (commentText.trim()) {
@@ -48,8 +52,12 @@ export default function TaskDetailModal({
             <button className="btn btn-sm btn-secondary" onClick={() => onTogglePin(task.id)}>
               {task.pinned ? '📍 Открепить' : '📌 Закрепить'}
             </button>
-            <button className="btn btn-sm btn-secondary" onClick={() => onEdit(task)}>✏️ Изменить</button>
-            <button className="btn btn-sm btn-danger" onClick={() => onDelete(task.id)}>🗑 Удалить</button>
+            {canEditOrDelete && (
+              <>
+                <button className="btn btn-sm btn-secondary" onClick={() => onEdit(task)}>✏️ Изменить</button>
+                <button className="btn btn-sm btn-danger" onClick={() => onDelete(task.id)}>🗑 Удалить</button>
+              </>
+            )}
             <button className="modal-close" onClick={onClose}>×</button>
           </div>
         </div>

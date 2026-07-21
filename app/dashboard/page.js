@@ -203,6 +203,7 @@ export default function KanbanPage() {
           onProgressChange={(progress) => handleProgressChange(detailTask.id, progress)}
           onTogglePin={() => handleTogglePin(detailTask.id)}
           onClose={() => setDetailTask(null)}
+          currentUserId={user?.id}
         />
       )}
 

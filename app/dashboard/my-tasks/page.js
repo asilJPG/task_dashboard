@@ -228,6 +228,7 @@ export default function MyTasksPage() {
           onProgressChange={(progress) => handleProgressChange(detailTask.id, progress)}
           onTogglePin={() => handleTogglePin(detailTask.id)}
           onClose={() => setDetailTask(null)}
+          currentUserId={user?.id}
         />
       )}
     </div>
