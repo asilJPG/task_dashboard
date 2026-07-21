@@ -204,7 +204,7 @@ export default function AdminPage() {
                     {u.is_admin && <span className="status-badge" style={{ backgroundColor: 'rgba(219, 109, 40, 0.1)', color: '#db6d28', fontSize: '10px', padding: '1px 6px', margin: 0 }}>Админ</span>}
                   </div>
                   <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
-                    Логин: {u.email?.split('@')[0]}
+                    Логин: {u.username || u.email?.split('@')[0]}
                   </div>
                 </div>
               </div>
