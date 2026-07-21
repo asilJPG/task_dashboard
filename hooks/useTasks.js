@@ -78,7 +78,9 @@ export function useTasks(userId) {
       created_at: new Date().toISOString()
     }]).select().single();
 
-    if (!error && newTask) {
+    if (error) {
+      console.error('Error creating task:', error);
+    } else if (newTask) {
       await supabase.from('tb_task_history').insert([{
         task_id: newTask.id,
         user_id: userId,
@@ -97,7 +99,9 @@ export function useTasks(userId) {
       updated_at: new Date().toISOString()
     }).eq('id', taskId).select().single();
 
-    if (!error) {
+    if (error) {
+      console.error('Error updating task:', error);
+    } else {
       await supabase.from('tb_task_history').insert([{
         task_id: taskId,
         user_id: userId,
@@ -109,7 +113,11 @@ export function useTasks(userId) {
   };
 
   const deleteTask = async (taskId) => {
-    return await supabase.from('tb_tasks').delete().eq('id', taskId);
+    const { error } = await supabase.from('tb_tasks').delete().eq('id', taskId);
+    if (error) {
+      console.error('Error deleting task:', error);
+    }
+    return { error };
   };
 
   const changeStatus = async (taskId, newStatus, stopReason = null) => {
@@ -125,7 +133,9 @@ export function useTasks(userId) {
     if (newStatus === 'stopped' && stopReason) updates.stop_reason = stopReason;
 
     const { error } = await supabase.from('tb_tasks').update(updates).eq('id', taskId);
-    if (!error) {
+    if (error) {
+      console.error('Error changing status:', error);
+    } else {
       await supabase.from('tb_task_history').insert([{
         task_id: taskId,
         user_id: userId,
@@ -155,7 +165,9 @@ export function useTasks(userId) {
       text
     }]).select().single();
     
-    if (!error) {
+    if (error) {
+      console.error('Error adding comment:', error);
+    } else {
       await supabase.from('tb_task_history').insert([{
         task_id: taskId,
         user_id: userId,
