@@ -55,8 +55,7 @@ export default function TaskFormModal({ isOpen, onClose, onSave, task, profiles 
       return;
     }
     
-    onSave({
-      id: task?.id,
+    const payload = {
       title,
       description,
       assigned_to: assignedTo,
@@ -64,7 +63,11 @@ export default function TaskFormModal({ isOpen, onClose, onSave, task, profiles 
       deadline: deadline || null,
       progress,
       tags
-    });
+    };
+    if (task?.id) {
+      payload.id = task.id;
+    }
+    onSave(payload);
     onClose();
   };
 
