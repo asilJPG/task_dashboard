@@ -7,6 +7,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useNotifications } from '@/hooks/useNotifications';
 import { useSearch } from '@/hooks/useSearch';
 import { formatRelativeTime } from '@/lib/utils';
+import ProfileSettingsModal from '../ProfileModal/ProfileSettingsModal';
 
 const SearchBar = () => {
   const { user } = useAuth();
@@ -124,6 +125,7 @@ const NotificationBell = () => {
 const UserMenu = () => {
   const { profile, signOut } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const dropdownRef = useRef(null);
   const router = useRouter();
 
@@ -150,10 +152,18 @@ const UserMenu = () => {
       <span className="user-name">{profile?.name || 'Пользователь'}</span>
       <span className="dropdown-arrow">▼</span>
       {isOpen && (
-        <div className="user-dropdown">
+        <div className="user-dropdown" onClick={(e) => e.stopPropagation()}>
+          <button 
+            className="btn btn-sm btn-secondary btn-full" 
+            style={{ marginBottom: '8px' }} 
+            onClick={() => { setIsSettingsOpen(true); setIsOpen(false); }}
+          >
+            Настройки
+          </button>
           <button className="btn btn-sm btn-danger btn-full" onClick={handleSignOut}>Выйти</button>
         </div>
       )}
+      <ProfileSettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
     </div>
   );
 };

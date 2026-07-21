@@ -145,6 +145,32 @@ export function AuthProvider({ children }) {
     }
   };
 
+  const updateProfile = async (updates) => {
+    if (!profile) return { error: { message: 'Сессия не найдена.' } };
+
+    if (isMock) {
+      const profiles = JSON.parse(localStorage.getItem('mock_profiles') || '[]');
+      const updatedProfiles = profiles.map(p => p.id === profile.id ? { ...p, ...updates } : p);
+      localStorage.setItem('mock_profiles', JSON.stringify(updatedProfiles));
+      
+      const newProfile = { ...profile, ...updates };
+      setProfile(newProfile);
+      return { data: newProfile, error: null };
+    } else {
+      const { data, error } = await supabase
+        .from('tb_profiles')
+        .update(updates)
+        .eq('id', profile.id)
+        .select()
+        .single();
+        
+      if (data && !error) {
+        setProfile(data);
+      }
+      return { data, error };
+    }
+  };
+
   const signOut = async () => {
     localStorage.removeItem('tb_session');
     setUser(null);
@@ -153,7 +179,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, signIn, adminCreateUser, signOut }}>
+    <AuthContext.Provider value={{ user, profile, loading, signIn, adminCreateUser, updateProfile, signOut }}>
       {children}
     </AuthContext.Provider>
   );
