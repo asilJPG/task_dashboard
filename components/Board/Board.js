@@ -98,8 +98,20 @@ export default function Board({ tasks = [], profiles = [], onTaskClick, onStatus
             >
               <div className="column-header" style={{ borderTopColor: col.color }}>
                 <span className="column-icon">{col.icon}</span>
-                <span className="column-title">{col.title}</span>
-                <span className="column-count badge">{colTasks.length}</span>
+                <span className="column-title">{col.title} ({colTasks.length})</span>
+                <span 
+                  className="column-count badge"
+                  style={{ 
+                    backgroundColor: `${col.color}25`,
+                    color: col.color,
+                    border: `1px solid ${col.color}50`,
+                    fontWeight: 'bold',
+                    padding: '2px 8px',
+                    fontSize: '12px'
+                  }}
+                >
+                  {colTasks.length}
+                </span>
               </div>
               <div 
                 className="column-body"
