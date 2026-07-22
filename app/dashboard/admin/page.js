@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { getTelegramSettings, saveTelegramSettings, sendTelegramMessage } from '@/lib/telegram';
 
 export default function AdminPage() {
-  const { profile, loading, adminCreateUser, updateUserRole } = useAuth();
+  const { profile, loading, adminCreateUser, updateUserRole, adminDeleteUser } = useAuth();
   const router = useRouter();
 
   const [usersList, setUsersList] = useState([]);
@@ -85,6 +85,17 @@ export default function AdminPage() {
       fetchUsers();
     } else {
       alert('Ошибка при изменении роли: ' + (updateError.message || 'Не удалось обновить'));
+    }
+  };
+
+  const handleDeleteUser = async (targetUser) => {
+    if (window.confirm(`Вы действительно хотите удалить сотрудника "${targetUser.name}" (@${targetUser.username})?`)) {
+      const { error: delError } = await adminDeleteUser(targetUser.id);
+      if (!delError) {
+        fetchUsers();
+      } else {
+        alert('Ошибка при удалении пользователя: ' + (delError.message || 'Не удалось удалить'));
+      }
     }
   };
 
@@ -327,7 +338,7 @@ export default function AdminPage() {
                       Логин: {u.username || u.email?.split('@')[0]}
                     </div>
                   </div>
-                  <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <select
                       className="form-select"
                       style={{ padding: '4px 8px', fontSize: '11px', width: 'auto', background: '#161b22', borderColor: 'var(--border-color)', borderRadius: '6px' }}
@@ -338,6 +349,18 @@ export default function AdminPage() {
                       <option value="manager">🧑‍💼 Руководитель</option>
                       <option value="admin">👑 Админ</option>
                     </select>
+
+                    {u.id !== profile?.id && (
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-danger"
+                        style={{ padding: '4px 8px', fontSize: '11px' }}
+                        title="Удалить сотрудника"
+                        onClick={() => handleDeleteUser(u)}
+                      >
+                        🗑
+                      </button>
+                    )}
                   </div>
                 </div>
               );

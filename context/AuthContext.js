@@ -208,8 +208,28 @@ export function AuthProvider({ children }) {
     return { error: null };
   };
 
+  const adminDeleteUser = async (targetUserId) => {
+    if (!targetUserId) return { error: { message: 'ID пользователя не указан' } };
+    if (profile && profile.id === targetUserId) {
+      return { error: { message: 'Вы не можете удалить свой собственный аккаунт.' } };
+    }
+
+    if (isMock) {
+      const profiles = JSON.parse(localStorage.getItem('mock_profiles') || '[]');
+      const updatedProfiles = profiles.filter(p => p.id !== targetUserId);
+      localStorage.setItem('mock_profiles', JSON.stringify(updatedProfiles));
+      return { error: null };
+    } else {
+      const { error } = await supabase
+        .from('tb_profiles')
+        .delete()
+        .eq('id', targetUserId);
+      return { error };
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, profile, loading, signIn, adminCreateUser, updateUserRole, updateProfile, signOut }}>
+    <AuthContext.Provider value={{ user, profile, loading, signIn, adminCreateUser, updateUserRole, adminDeleteUser, updateProfile, signOut }}>
       {children}
     </AuthContext.Provider>
   );
