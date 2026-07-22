@@ -239,7 +239,14 @@ export function useTasks(userId, profile) {
         details: text.substring(0, 50)
       }]);
 
-      const task = tasks.find(t => t.id === taskId);
+      let task = tasks.find(t => t.id === taskId);
+      if (!task) {
+        try {
+          const { data: fetchedTask } = await supabase.from('tb_tasks').select('*').eq('id', taskId).maybeSingle();
+          task = fetchedTask;
+        } catch (e) {}
+      }
+
       if (task) {
         if (task.created_by !== userId) {
           await sendNotification(task.created_by, 'comment', taskId, 'Новый комментарий к задаче');
