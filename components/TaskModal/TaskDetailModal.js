@@ -53,7 +53,10 @@ export default function TaskDetailModal({
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal modal-lg" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
-          <h3>{task.title} {task.pinned && '📌'}</h3>
+          <h3>
+            <span style={{ color: '#38bdf8', marginRight: '6px' }}>№{task.task_number || task.id?.slice(0, 5)} —</span>
+            {task.title} {task.pinned && '📌'}
+          </h3>
           <div className="modal-header-actions">
             <button className="btn btn-sm btn-secondary" onClick={() => onTogglePin(task.id)}>
               {task.pinned ? '📍 Открепить' : '📌 Закрепить'}

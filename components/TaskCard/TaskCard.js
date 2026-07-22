@@ -1,13 +1,14 @@
 'use client';
 
 import React from 'react';
-import { getDeadlineStatus, getPriorityLabel, normalizeTags } from '@/lib/utils';
+import { getDeadlineStatus, getPriorityLabel, normalizeTags, getTaskNumber } from '@/lib/utils';
 
-export default function TaskCard({ task, profiles = [], onClick, draggable = true, onDragStart, onDragEnd, dragging }) {
+export default function TaskCard({ task, profiles = [], allTasks = [], onClick, draggable = true, onDragStart, onDragEnd, dragging }) {
   const creator = profiles.find(p => p.id === task.created_by);
   const assignee = profiles.find(p => p.id === task.assigned_to);
   const deadlineStatus = getDeadlineStatus(task.deadline);
   const tagsList = normalizeTags(task.tags);
+  const taskNum = getTaskNumber(task, allTasks);
 
   return (
     <div 
@@ -29,7 +30,10 @@ export default function TaskCard({ task, profiles = [], onClick, draggable = tru
         </div>
       </div>
 
-      <h4 className="task-title">{task.title}</h4>
+      <h4 className="task-title">
+        <span style={{ color: '#38bdf8', marginRight: '6px', fontWeight: 'bold' }}>№{taskNum}</span>
+        {task.title}
+      </h4>
       {task.description && <p className="task-description">{task.description}</p>}
 
       {tagsList.length > 0 && (

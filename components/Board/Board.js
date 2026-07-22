@@ -113,6 +113,7 @@ export default function Board({ tasks = [], profiles = [], onTaskClick, onStatus
                       key={task.id}
                       task={task}
                       profiles={profiles}
+                      allTasks={tasks}
                       onClick={onTaskClick}
                       draggable={true}
                       onDragStart={(e) => handleDragStart(e, task.id)}

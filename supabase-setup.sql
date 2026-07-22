@@ -39,6 +39,7 @@ CREATE TABLE IF NOT EXISTS tb_tasks (
   assigned_to UUID NOT NULL REFERENCES tb_profiles(id) ON DELETE CASCADE,
   assignees TEXT[] DEFAULT '{}',
   responsible_id UUID REFERENCES tb_profiles(id) ON DELETE CASCADE,
+  task_number SERIAL,
   stop_reason TEXT,
   deadline DATE,
   tags TEXT[] DEFAULT '{}',
@@ -50,6 +51,7 @@ CREATE TABLE IF NOT EXISTS tb_tasks (
 -- Migration for existing tb_tasks tables
 ALTER TABLE tb_tasks ADD COLUMN IF NOT EXISTS assignees TEXT[] DEFAULT '{}';
 ALTER TABLE tb_tasks ADD COLUMN IF NOT EXISTS responsible_id UUID;
+ALTER TABLE tb_tasks ADD COLUMN IF NOT EXISTS task_number SERIAL;
 
 -- 3. Comments table
 CREATE TABLE IF NOT EXISTS tb_comments (
