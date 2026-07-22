@@ -28,6 +28,9 @@ export default function TaskCard({ task, profiles = [], onClick, draggable = tru
         </div>
       </div>
 
+      <h4 className="task-title">{task.title}</h4>
+      {task.description && <p className="task-description">{task.description}</p>}
+
       <div className="task-progress">
         <div className="task-progress-bar">
           <div className="task-progress-fill" style={{ width: `${task.progress || 0}%` }}></div>

@@ -190,7 +190,7 @@ export default function KanbanPage() {
               value={selectedEmployee}
               onChange={(e) => setSelectedEmployee(e.target.value)}
             >
-              <option value="all">👥 Все сотрудники ({tasks.length})</option>
+              <option value="all">👥 Все сотрудники ({teamMembers.length})</option>
               {teamMembers.map(m => (
                 <option key={m.id} value={m.id}>
                   👨‍💻 {m.name} (@{m.username})
