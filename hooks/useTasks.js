@@ -87,8 +87,13 @@ export function useTasks(userId, profile) {
 
   const fetchProfileName = async (uid) => {
     if (!uid) return '';
-    const { data } = await supabase.from('tb_profiles').select('name').eq('id', uid).single();
-    return data?.name || '';
+    if (profile && profile.id === uid && profile.name) return profile.name;
+    try {
+      const { data } = await supabase.from('tb_profiles').select('name').eq('id', uid).maybeSingle();
+      return data?.name || '';
+    } catch (e) {
+      return '';
+    }
   };
 
   const createTask = async (data) => {
