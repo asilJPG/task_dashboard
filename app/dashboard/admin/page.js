@@ -290,12 +290,14 @@ export default function AdminPage() {
         {/* Active Team List */}
         <div className="analytics-card">
           <h3 style={{ fontSize: '15px', fontWeight: '600', marginBottom: '16px', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>
-            Список сотрудников ({usersList.length})
+            Список сотрудников ({usersList.filter(u => u.username !== 'admin' && !u.is_admin && u.role !== 'admin').length})
           </h3>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: '550px', overflowY: 'auto', paddingRight: '4px' }}>
-            {usersList.map(u => {
-              const currentRole = u.role || (u.is_admin ? 'admin' : 'employee');
+            {usersList
+              .filter(u => u.username !== 'admin' && !u.is_admin && u.role !== 'admin')
+              .map(u => {
+                const currentRole = u.role || (u.is_admin ? 'admin' : 'employee');
               return (
                 <div 
                   key={u.id} 

@@ -92,12 +92,14 @@ export default function AnalyticsPage() {
 
   const overdueTasks = getOverdueTasks();
 
-  const assigneeStats = profiles.map(profile => {
-    const assignedTasks = tasks.filter(t => t.assigned_to === profile.id);
-    const completed = assignedTasks.filter(t => t.status === 'done').length;
-    const progress = assignedTasks.length > 0 ? Math.round((completed / assignedTasks.length) * 100) : 0;
-    return { ...profile, assignedTasks, completed, progress };
-  }).filter(p => p.assignedTasks.length > 0);
+  const assigneeStats = profiles
+    .filter(p => p.username !== 'admin' && !p.is_admin && p.role !== 'admin')
+    .map(profile => {
+      const assignedTasks = tasks.filter(t => t.assigned_to === profile.id || (Array.isArray(t.assignees) && t.assignees.includes(profile.id)));
+      const completed = assignedTasks.filter(t => t.status === 'done').length;
+      const progress = assignedTasks.length > 0 ? Math.round((completed / assignedTasks.length) * 100) : 0;
+      return { ...profile, assignedTasks, completed, progress };
+    }).filter(p => p.assignedTasks.length > 0);
 
   return (
     <div className="analytics-view">

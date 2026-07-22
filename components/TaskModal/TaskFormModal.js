@@ -129,19 +129,21 @@ export default function TaskFormModal({ isOpen, onClose, onSave, task, profiles 
             <div className="form-group">
               <label className="form-label">👨‍💻 Исполнители (выберите без ограничений) *</label>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', padding: '8px', background: '#0d1117', border: '1px solid var(--border-color)', borderRadius: '6px', maxHeight: '120px', overflowY: 'auto' }}>
-                {profiles.map(p => {
-                  const isChecked = assignees.includes(p.id);
-                  return (
-                    <button
-                      key={p.id}
-                      type="button"
-                      className={`btn btn-sm ${isChecked ? 'btn-primary' : 'btn-secondary'}`}
-                      style={{ padding: '4px 10px', fontSize: '12px' }}
-                      onClick={() => handleAssigneeToggle(p.id)}
-                    >
-                      {isChecked ? '✓ ' : '+ '}{p.name} {p.id === currentUser?.id ? '(Вы)' : ''}
-                    </button>
-                  );
+                {profiles
+                  .filter(p => p.username !== 'admin' && !p.is_admin && p.role !== 'admin')
+                  .map(p => {
+                    const isChecked = assignees.includes(p.id);
+                    return (
+                      <button
+                        key={p.id}
+                        type="button"
+                        className={`btn btn-sm ${isChecked ? 'btn-primary' : 'btn-secondary'}`}
+                        style={{ padding: '4px 10px', fontSize: '12px' }}
+                        onClick={() => handleAssigneeToggle(p.id)}
+                      >
+                        {isChecked ? '✓ ' : '+ '}{p.name} {p.id === currentUser?.id ? '(Вы)' : ''}
+                      </button>
+                    );
                 })}
               </div>
             </div>
@@ -156,8 +158,10 @@ export default function TaskFormModal({ isOpen, onClose, onSave, task, profiles 
                   required
                 >
                   <option value="">Выберите ответственного</option>
-                  {profiles.map(p => (
-                    <option key={p.id} value={p.id}>{p.name} {p.id === currentUser?.id ? '(Вы)' : ''}</option>
+                  {profiles
+                    .filter(p => p.username !== 'admin' && !p.is_admin && p.role !== 'admin')
+                    .map(p => (
+                      <option key={p.id} value={p.id}>{p.name} {p.id === currentUser?.id ? '(Вы)' : ''}</option>
                   ))}
                 </select>
               </div>
