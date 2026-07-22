@@ -140,22 +140,24 @@ export default function TaskFormModal({ isOpen, onClose, onSave, task, profiles 
               />
             </div>
 
-            <div className="form-group">
-              <label className="form-label">Прогресс ({progress}%):</label>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                {[0, 25, 50, 75, 100].map(val => (
-                  <button
-                    type="button"
-                    key={val}
-                    className={`btn btn-sm ${progress === val ? 'btn-primary' : 'btn-secondary'}`}
-                    style={{ padding: '4px 12px', fontSize: '12px' }}
-                    onClick={() => setProgress(val)}
-                  >
-                    {val}%
-                  </button>
-                ))}
+            {task && (
+              <div className="form-group">
+                <label className="form-label">Прогресс ({progress}%):</label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                  {[0, 25, 50, 75, 100].map(val => (
+                    <button
+                      type="button"
+                      key={val}
+                      className={`btn btn-sm ${progress === val ? 'btn-primary' : 'btn-secondary'}`}
+                      style={{ padding: '4px 12px', fontSize: '12px' }}
+                      onClick={() => setProgress(val)}
+                    >
+                      {val}%
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
             <div className="form-group">
               <label className="form-label">Теги</label>
