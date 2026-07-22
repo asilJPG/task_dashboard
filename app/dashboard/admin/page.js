@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
+import { getTelegramSettings, saveTelegramSettings, sendTelegramMessage } from '@/lib/telegram';
 
 export default function AdminPage() {
   const { profile, loading, adminCreateUser, updateUserRole } = useAuth();
@@ -87,12 +88,96 @@ export default function AdminPage() {
     }
   };
 
+  const [tgBotToken, setTgBotToken] = useState('');
+  const [tgChatId, setTgChatId] = useState('');
+  const [tgMsgStatus, setTgMsgStatus] = useState(null);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const { botToken, chatId } = getTelegramSettings();
+      setTgBotToken(botToken || '');
+      setTgChatId(chatId || '');
+    }
+  }, []);
+
+  const handleSaveTelegram = (e) => {
+    e.preventDefault();
+    saveTelegramSettings({ botToken: tgBotToken, chatId: tgChatId });
+    setTgMsgStatus({ type: 'success', text: 'Настройки Telegram сохранены!' });
+    setTimeout(() => setTgMsgStatus(null), 3000);
+  };
+
+  const handleTestTelegram = async () => {
+    setTgMsgStatus({ type: 'info', text: 'Отправка тестового сообщения...' });
+    const res = await sendTelegramMessage('<b>🤖 TaskBoard:</b> Тестовое уведомление успешно отправлено в группу!');
+    if (res.success) {
+      setTgMsgStatus({ type: 'success', text: 'Тестовое сообщение отправлено в Telegram-группу! Check your chat.' });
+    } else {
+      setTgMsgStatus({ type: 'error', text: 'Ошибка отправки: ' + (res.error || 'Проверьте токен и ID группы') });
+    }
+  };
+
   return (
     <div className="dashboard-view" style={{ maxWidth: '1000px', margin: '0 auto' }}>
       <h2>⚙️ Панель администратора</h2>
       <p style={{ color: 'var(--text-secondary)', marginBottom: '24px', fontSize: '13px' }}>
-        Здесь вы можете регистрировать новых сотрудников, назначать им роли и управлять вашей командой.
+        Здесь вы можете регистрировать новых сотрудников, назначать им роли, управлять командой и настраивать уведомления в Telegram-группу.
       </p>
+
+      {/* Telegram Group Notification Settings */}
+      <div className="analytics-card" style={{ marginBottom: '32px' }}>
+        <h3 style={{ fontSize: '15px', fontWeight: '600', marginBottom: '12px', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span>📢 Уведомления в Telegram-группу</span>
+        </h3>
+        <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '16px' }}>
+          🔒 <strong>Политика конфиденциальности:</strong> В группу приходят уведомления о новых задачах, их завершении и комментариях. <u>Названия и описание задач НЕ публикуются в группе</u>, чтобы другие сотрудники не могли читать чужие конфиденциальные задачи.
+        </p>
+
+        {tgMsgStatus && (
+          <div style={{
+            padding: '10px 14px',
+            borderRadius: '6px',
+            fontSize: '12px',
+            marginBottom: '16px',
+            background: tgMsgStatus.type === 'success' ? 'rgba(46, 160, 67, 0.15)' : tgMsgStatus.type === 'error' ? 'rgba(248, 81, 73, 0.15)' : 'rgba(56, 189, 248, 0.15)',
+            border: `1px solid ${tgMsgStatus.type === 'success' ? '#3fb950' : tgMsgStatus.type === 'error' ? '#f85149' : '#38bdf8'}`,
+            color: tgMsgStatus.type === 'success' ? '#3fb950' : tgMsgStatus.type === 'error' ? '#f85149' : '#38bdf8'
+          }}>
+            {tgMsgStatus.text}
+          </div>
+        )}
+
+        <form onSubmit={handleSaveTelegram} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+          <div className="form-group" style={{ margin: 0 }}>
+            <label className="form-label">Токен Telegram бота (Bot Token)</label>
+            <input 
+              type="text" 
+              className="form-input" 
+              placeholder="Пример: 123456789:ABCdefGhIJKlmNoPQRsTUVwxyZ"
+              value={tgBotToken}
+              onChange={e => setTgBotToken(e.target.value)}
+            />
+          </div>
+          <div className="form-group" style={{ margin: 0 }}>
+            <label className="form-label">ID Telegram группы (Chat ID)</label>
+            <input 
+              type="text" 
+              className="form-input" 
+              placeholder="Пример: -1001234567890"
+              value={tgChatId}
+              onChange={e => setTgChatId(e.target.value)}
+            />
+          </div>
+          <div style={{ gridColumn: '1 / -1', display: 'flex', gap: '12px', marginTop: '8px' }}>
+            <button type="submit" className="btn btn-primary" style={{ padding: '8px 20px', fontSize: '13px' }}>
+              💾 Сохранить настройки TG
+            </button>
+            <button type="button" className="btn btn-secondary" style={{ padding: '8px 20px', fontSize: '13px' }} onClick={handleTestTelegram}>
+              💬 Отправить тестовое сообщение
+            </button>
+          </div>
+        </form>
+      </div>
 
       <div className="admin-grid">
         {/* User Creation Form */}

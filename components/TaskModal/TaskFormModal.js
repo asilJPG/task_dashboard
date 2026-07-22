@@ -6,6 +6,8 @@ export default function TaskFormModal({ isOpen, onClose, onSave, task, profiles 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [assignedTo, setAssignedTo] = useState('');
+  const [assignees, setAssignees] = useState([]);
+  const [responsibleId, setResponsibleId] = useState('');
   const [priority, setPriority] = useState('medium');
   const [deadline, setDeadline] = useState('');
   const [progress, setProgress] = useState(0);
@@ -16,7 +18,12 @@ export default function TaskFormModal({ isOpen, onClose, onSave, task, profiles 
     if (task) {
       setTitle(task.title || '');
       setDescription(task.description || '');
-      setAssignedTo(task.assigned_to || '');
+      const initialAssignees = Array.isArray(task.assignees) && task.assignees.length > 0
+        ? task.assignees
+        : (task.assigned_to ? [task.assigned_to] : []);
+      setAssignees(initialAssignees);
+      setAssignedTo(task.assigned_to || initialAssignees[0] || '');
+      setResponsibleId(task.responsible_id || task.assigned_to || initialAssignees[0] || '');
       setPriority(task.priority || 'medium');
       setDeadline(task.deadline || '');
       setProgress(task.progress || 0);
@@ -25,14 +32,31 @@ export default function TaskFormModal({ isOpen, onClose, onSave, task, profiles 
       setTitle('');
       setDescription('');
       setAssignedTo('');
+      setAssignees(currentUser?.id ? [currentUser.id] : []);
+      setResponsibleId(currentUser?.id || '');
       setPriority('medium');
       setDeadline('');
       setProgress(0);
       setTags([]);
     }
-  }, [task, isOpen]);
+  }, [task, isOpen, currentUser]);
 
   if (!isOpen) return null;
+
+  const handleAssigneeToggle = (profileId) => {
+    setAssignees(prev => {
+      let updated;
+      if (prev.includes(profileId)) {
+        updated = prev.filter(id => id !== profileId);
+      } else {
+        updated = [...prev, profileId];
+      }
+      if (updated.length > 0 && !updated.includes(responsibleId)) {
+        setResponsibleId(updated[0]);
+      }
+      return updated;
+    });
+  };
 
   const handleTagAdd = (e) => {
     if (e.key === 'Enter' && tagInput.trim()) {
@@ -50,15 +74,18 @@ export default function TaskFormModal({ isOpen, onClose, onSave, task, profiles 
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!assignedTo) {
-      alert('Пожалуйста, выберите исполнителя.');
+    if (assignees.length === 0) {
+      alert('Пожалуйста, выберите хотя бы одного исполнителя.');
       return;
     }
-    
+    const finalResponsible = responsibleId || assignees[0];
+
     const payload = {
       title,
       description,
-      assigned_to: assignedTo,
+      assigned_to: assignees[0],
+      assignees,
+      responsible_id: finalResponsible,
       priority,
       deadline: deadline || null,
       progress,
@@ -99,23 +126,43 @@ export default function TaskFormModal({ isOpen, onClose, onSave, task, profiles 
               />
             </div>
 
+            <div className="form-group">
+              <label className="form-label">👨‍💻 Исполнители (выберите без ограничений) *</label>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', padding: '8px', background: '#0d1117', border: '1px solid var(--border-color)', borderRadius: '6px', maxHeight: '120px', overflowY: 'auto' }}>
+                {profiles.map(p => {
+                  const isChecked = assignees.includes(p.id);
+                  return (
+                    <button
+                      key={p.id}
+                      type="button"
+                      className={`btn btn-sm ${isChecked ? 'btn-primary' : 'btn-secondary'}`}
+                      style={{ padding: '4px 10px', fontSize: '12px' }}
+                      onClick={() => handleAssigneeToggle(p.id)}
+                    >
+                      {isChecked ? '✓ ' : '+ '}{p.name} {p.id === currentUser?.id ? '(Вы)' : ''}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             <div className="form-row">
-              <div className="form-group">
-                <label className="form-label">Исполнитель *</label>
+              <div className="form-group" style={{ flex: 1 }}>
+                <label className="form-label">👑 Ответственный за прогресс и статус *</label>
                 <select 
                   className="form-select" 
-                  value={assignedTo} 
-                  onChange={(e) => setAssignedTo(e.target.value)}
+                  value={responsibleId} 
+                  onChange={(e) => setResponsibleId(e.target.value)}
                   required
                 >
-                  <option value="">Выберите исполнителя</option>
+                  <option value="">Выберите ответственного</option>
                   {profiles.map(p => (
                     <option key={p.id} value={p.id}>{p.name} {p.id === currentUser?.id ? '(Вы)' : ''}</option>
                   ))}
                 </select>
               </div>
 
-              <div className="form-group">
+              <div className="form-group" style={{ flex: 1 }}>
                 <label className="form-label">Приоритет</label>
                 <select 
                   className="form-select" 

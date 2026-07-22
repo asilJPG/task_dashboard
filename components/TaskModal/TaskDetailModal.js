@@ -21,9 +21,15 @@ export default function TaskDetailModal({
 
   const creator = profiles.find(p => p.id === task.created_by);
   const assignee = profiles.find(p => p.id === task.assigned_to);
+  const responsibleUser = profiles.find(p => p.id === (task.responsible_id || task.assigned_to));
+
+  const assigneesList = Array.isArray(task.assignees) && task.assignees.length > 0
+    ? task.assignees.map(id => profiles.find(p => p.id === id)).filter(Boolean)
+    : (assignee ? [assignee] : []);
 
   const currentUserProfile = profiles.find(p => p.id === currentUserId);
-  const canEditOrDelete = task.created_by === currentUserId || currentUserProfile?.is_admin;
+  const canEditOrDelete = task.created_by === currentUserId || currentUserProfile?.is_admin || currentUserProfile?.role === 'admin';
+  const canChangeStatusOrProgress = currentUserId === (task.responsible_id || task.assigned_to) || currentUserId === task.created_by || currentUserProfile?.is_admin || currentUserProfile?.role === 'admin' || currentUserProfile?.role === 'manager';
 
   const handleCommentSubmit = () => {
     if (commentText.trim()) {
@@ -84,12 +90,26 @@ export default function TaskDetailModal({
               </span>
             </div>
             <div className="detail-row">
-              <span className="detail-label">Исполнитель:</span>
-              <span className="detail-value" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span className="avatar-circle" style={{ background: assignee?.color, width: '18px', height: '18px', fontSize: '10px' }}>
-                  {assignee?.avatar || '👤'}
+              <span className="detail-label">Исполнители ({assigneesList.length}):</span>
+              <span className="detail-value" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                {assigneesList.map(a => (
+                  <span key={a.id} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: '#161b22', padding: '2px 8px', borderRadius: '12px', fontSize: '11px' }}>
+                    <span className="avatar-circle" style={{ background: a.color, width: '16px', height: '16px', fontSize: '9px' }}>
+                      {a.avatar || '👤'}
+                    </span>
+                    {a.name}
+                    {a.id === responsibleUser?.id && <span style={{ color: '#f59e0b', fontSize: '10px', marginLeft: '2px' }}>👑</span>}
+                  </span>
+                ))}
+              </span>
+            </div>
+            <div className="detail-row">
+              <span className="detail-label">Ответственный:</span>
+              <span className="detail-value" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '600', color: '#38bdf8' }}>
+                <span className="avatar-circle" style={{ background: responsibleUser?.color, width: '18px', height: '18px', fontSize: '10px' }}>
+                  {responsibleUser?.avatar || '👑'}
                 </span>
-                {assignee?.name || 'Не назначен'}
+                {responsibleUser?.name || 'Не назначен'} (Отвечает за прогресс)
               </span>
             </div>
             <div className="detail-row">
@@ -105,7 +125,14 @@ export default function TaskDetailModal({
             </div>
           )}
 
-          <div className="detail-row" style={{ marginBottom: '20px' }}>
+          {!canChangeStatusOrProgress && (
+            <div style={{ background: 'rgba(219, 109, 40, 0.1)', border: '1px solid rgba(219, 109, 40, 0.2)', color: '#db6d28', padding: '10px 14px', borderRadius: '8px', fontSize: '12px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span>🔒</span>
+              <span>Изменять статус и прогресс этой задачи может только ответственный: <strong>{responsibleUser?.name || 'Загрузка...'}</strong>. Вы можете оставлять комментарии и общаться в чате задачи ниже!</span>
+            </div>
+          )}
+
+          <div className="detail-row" style={{ marginBottom: '20px', opacity: canChangeStatusOrProgress ? 1 : 0.5, pointerEvents: canChangeStatusOrProgress ? 'auto' : 'none' }}>
             <span className="detail-label">Прогресс ({localProgress}%):</span>
             <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
               {[0, 25, 50, 75, 100].map(val => (
@@ -118,6 +145,7 @@ export default function TaskDetailModal({
                     setLocalProgress(val);
                     onProgressChange(val);
                   }}
+                  disabled={!canChangeStatusOrProgress}
                 >
                   {val}%
                 </button>
@@ -140,13 +168,14 @@ export default function TaskDetailModal({
             </div>
           )}
 
-          <div style={{ marginBottom: '24px' }}>
+          <div style={{ marginBottom: '24px', opacity: canChangeStatusOrProgress ? 1 : 0.5, pointerEvents: canChangeStatusOrProgress ? 'auto' : 'none' }}>
             <h4 style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '8px' }}>Быстрая смена статуса</h4>
             <div className="detail-actions-row">
               <button 
                 type="button"
                 className={`btn btn-sm ${task.status === 'new' ? 'btn-primary' : 'btn-secondary'}`} 
                 onClick={() => onStatusChange('new')}
+                disabled={!canChangeStatusOrProgress}
               >
                 📋 В новые
               </button>
@@ -154,6 +183,7 @@ export default function TaskDetailModal({
                 type="button"
                 className={`btn btn-sm ${task.status === 'in_progress' ? 'btn-primary' : 'btn-secondary'}`} 
                 onClick={() => onStatusChange('in_progress')}
+                disabled={!canChangeStatusOrProgress}
               >
                 🔄 В работу
               </button>
@@ -161,6 +191,7 @@ export default function TaskDetailModal({
                 type="button"
                 className={`btn btn-sm ${task.status === 'stopped' ? 'btn-primary' : 'btn-secondary'}`} 
                 onClick={() => onStatusChange('stopped')}
+                disabled={!canChangeStatusOrProgress}
               >
                 🛑 На стоп
               </button>
@@ -168,6 +199,7 @@ export default function TaskDetailModal({
                 type="button"
                 className={`btn btn-sm ${task.status === 'done' ? 'btn-primary' : 'btn-secondary'}`} 
                 onClick={() => onStatusChange('done')}
+                disabled={!canChangeStatusOrProgress}
               >
                 ✅ Выполнено
               </button>

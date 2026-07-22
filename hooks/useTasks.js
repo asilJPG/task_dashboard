@@ -1,7 +1,6 @@
-'use client';
-
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
+import { sendTelegramNotification } from '../lib/telegram';
 
 export function useTasks(userId, profile) {
   const [tasks, setTasks] = useState([]);
@@ -9,21 +8,31 @@ export function useTasks(userId, profile) {
 
   const isManagerOrAdmin = profile?.role === 'manager' || profile?.role === 'admin' || profile?.is_admin === true;
 
+  const isUserRelated = useCallback((task, uid) => {
+    if (!task || !uid) return false;
+    if (task.created_by === uid || task.assigned_to === uid || task.responsible_id === uid) return true;
+    if (Array.isArray(task.assignees) && task.assignees.includes(uid)) return true;
+    return false;
+  }, []);
+
   const fetchTasks = useCallback(async () => {
     if (!userId) return;
     setLoading(true);
 
     let queryBuilder = supabase.from('tb_tasks').select('*');
-    if (!isManagerOrAdmin) {
-      queryBuilder = queryBuilder.or(`created_by.eq.${userId},assigned_to.eq.${userId}`);
-    }
 
     const { data, error } = await queryBuilder;
     
-    if (data) setTasks(data);
+    if (data) {
+      if (isManagerOrAdmin) {
+        setTasks(data);
+      } else {
+        setTasks(data.filter(t => isUserRelated(t, userId)));
+      }
+    }
     if (error) console.error('Error fetching tasks:', error);
     setLoading(false);
-  }, [userId, isManagerOrAdmin]);
+  }, [userId, isManagerOrAdmin, isUserRelated]);
 
   useEffect(() => {
     if (!userId) {
@@ -38,11 +47,11 @@ export function useTasks(userId, profile) {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'tb_tasks' }, payload => {
         const { eventType, new: newRec, old: oldRec } = payload;
         if (eventType === 'INSERT') {
-          if (isManagerOrAdmin || newRec.created_by === userId || newRec.assigned_to === userId) {
+          if (isManagerOrAdmin || isUserRelated(newRec, userId)) {
             setTasks(prev => [newRec, ...prev]);
           }
         } else if (eventType === 'UPDATE') {
-          if (isManagerOrAdmin || newRec.created_by === userId || newRec.assigned_to === userId) {
+          if (isManagerOrAdmin || isUserRelated(newRec, userId)) {
             setTasks(prev => {
               const exists = prev.some(t => t.id === newRec.id);
               if (exists) {
@@ -63,7 +72,7 @@ export function useTasks(userId, profile) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [userId, fetchTasks, isManagerOrAdmin]);
+  }, [userId, fetchTasks, isManagerOrAdmin, isUserRelated]);
 
   const sendNotification = async (recipientId, type, taskId, message) => {
     if (!recipientId || recipientId === userId) return;
@@ -76,9 +85,20 @@ export function useTasks(userId, profile) {
     }]);
   };
 
+  const fetchProfileName = async (uid) => {
+    if (!uid) return '';
+    const { data } = await supabase.from('tb_profiles').select('name').eq('id', uid).single();
+    return data?.name || '';
+  };
+
   const createTask = async (data) => {
+    const assignees = Array.isArray(data.assignees) ? data.assignees : (data.assigned_to ? [data.assigned_to] : []);
+    const responsible_id = data.responsible_id || data.assigned_to || userId;
+
     const { data: newTask, error } = await supabase.from('tb_tasks').insert([{
       ...data,
+      assignees,
+      responsible_id,
       created_by: userId,
       created_at: new Date().toISOString()
     }]).select().single();
@@ -91,8 +111,28 @@ export function useTasks(userId, profile) {
         user_id: userId,
         action: 'created'
       }]);
-      if (newTask.assigned_to && newTask.assigned_to !== userId) {
-        await sendNotification(newTask.assigned_to, 'assigned', newTask.id, 'Вам назначена новая задача');
+
+      // Notify assignees
+      for (const assigneeId of assignees) {
+        if (assigneeId !== userId) {
+          await sendNotification(assigneeId, 'assigned', newTask.id, 'Вам назначена новая задача');
+        }
+      }
+
+      // Send Telegram Notification (PRIVACY: No task title/description)
+      try {
+        const creatorName = profile?.name || await fetchProfileName(userId);
+        const responsibleName = await fetchProfileName(responsible_id);
+        const assigneeNames = await Promise.all(assignees.map(id => fetchProfileName(id)));
+
+        await sendTelegramNotification('TASK_CREATED', {
+          task: newTask,
+          creatorName,
+          assigneeNames,
+          responsibleName
+        });
+      } catch (err) {
+        console.error('Telegram notification trigger failed:', err);
       }
     }
     return { data: newTask, error };
@@ -150,6 +190,20 @@ export function useTasks(userId, profile) {
       if (task.created_by !== userId) {
         await sendNotification(task.created_by, 'status_change', taskId, `Статус задачи изменен на ${newStatus}`);
       }
+
+      // If status changed to DONE, send Telegram notification with duration
+      if (newStatus === 'done') {
+        try {
+          const respId = task.responsible_id || task.assigned_to;
+          const responsibleName = await fetchProfileName(respId);
+          await sendTelegramNotification('TASK_COMPLETED', {
+            task,
+            responsibleName
+          });
+        } catch (err) {
+          console.error('Telegram completion notification error:', err);
+        }
+      }
     }
   };
 
@@ -179,12 +233,26 @@ export function useTasks(userId, profile) {
         action: 'comment_added',
         details: text.substring(0, 50)
       }]);
+
       const task = tasks.find(t => t.id === taskId);
-      if (task && task.created_by !== userId) {
-        await sendNotification(task.created_by, 'comment', taskId, 'Новый комментарий к задаче');
-      }
-      if (task && task.assigned_to && task.assigned_to !== userId) {
-        await sendNotification(task.assigned_to, 'comment', taskId, 'Новый комментарий к задаче');
+      if (task) {
+        if (task.created_by !== userId) {
+          await sendNotification(task.created_by, 'comment', taskId, 'Новый комментарий к задаче');
+        }
+        if (task.assigned_to && task.assigned_to !== userId) {
+          await sendNotification(task.assigned_to, 'comment', taskId, 'Новый комментарий к задаче');
+        }
+
+        // Send Telegram alert for new comment
+        try {
+          const authorName = profile?.name || await fetchProfileName(userId);
+          await sendTelegramNotification('COMMENT_ADDED', {
+            task,
+            authorName
+          });
+        } catch (err) {
+          console.error('Telegram comment notification error:', err);
+        }
       }
     }
     return { data, error };

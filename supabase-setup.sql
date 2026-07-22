@@ -37,6 +37,8 @@ CREATE TABLE IF NOT EXISTS tb_tasks (
   priority TEXT DEFAULT 'medium' CHECK (priority IN ('low','medium','high','critical')),
   created_by UUID NOT NULL REFERENCES tb_profiles(id) ON DELETE CASCADE,
   assigned_to UUID NOT NULL REFERENCES tb_profiles(id) ON DELETE CASCADE,
+  assignees TEXT[] DEFAULT '{}',
+  responsible_id UUID REFERENCES tb_profiles(id) ON DELETE CASCADE,
   stop_reason TEXT,
   deadline DATE,
   tags TEXT[] DEFAULT '{}',
@@ -44,6 +46,10 @@ CREATE TABLE IF NOT EXISTS tb_tasks (
   created_at TIMESTAMPTZ DEFAULT now(),
   updated_at TIMESTAMPTZ DEFAULT now()
 );
+
+-- Migration for existing tb_tasks tables
+ALTER TABLE tb_tasks ADD COLUMN IF NOT EXISTS assignees TEXT[] DEFAULT '{}';
+ALTER TABLE tb_tasks ADD COLUMN IF NOT EXISTS responsible_id UUID;
 
 -- 3. Comments table
 CREATE TABLE IF NOT EXISTS tb_comments (
