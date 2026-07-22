@@ -26,6 +26,7 @@ export default function KanbanPage() {
   const [showTeamModal, setShowTeamModal] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState('all');
   const [selectedTag, setSelectedTag] = useState('all');
+  const [sortBy, setSortBy] = useState('created_desc');
   
   const [comments, setComments] = useState({});
   const [histories, setHistories] = useState({});
@@ -229,6 +230,20 @@ export default function KanbanPage() {
               ))}
             </select>
           )}
+
+          {/* Sort Selector */}
+          <select
+            className="form-select"
+            style={{ padding: '6px 12px', fontSize: '12px', width: 'auto', background: '#161b22', borderColor: 'var(--border-color)', borderRadius: '8px' }}
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+          >
+            <option value="created_desc">📌 Новые и закрепленные</option>
+            <option value="priority_desc">🔥 По приоритету (высокий сначала)</option>
+            <option value="deadline_asc">📅 По дедлайну (ближайшие сначала)</option>
+            <option value="progress_desc">📶 По прогрессу (высокий сначала)</option>
+            <option value="title_asc">🔤 По названию (А — Я)</option>
+          </select>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -250,6 +265,7 @@ export default function KanbanPage() {
       <Board 
         tasks={displayedTasks}
         profiles={profiles}
+        sortBy={sortBy}
         onTaskClick={handleTaskClick}
         onStatusChange={handleStatusChange}
         currentUserId={user?.id}

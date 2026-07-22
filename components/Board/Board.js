@@ -10,7 +10,9 @@ const columns = [
   { id: 'done', title: 'Готово', icon: '✅', color: '#34d399' }
 ];
 
-export default function Board({ tasks = [], profiles = [], onTaskClick, onStatusChange, currentUserId }) {
+const priorityWeight = { critical: 4, high: 3, medium: 2, low: 1 };
+
+export default function Board({ tasks = [], profiles = [], sortBy = 'created_desc', onTaskClick, onStatusChange, currentUserId }) {
   const [draggedTaskId, setDraggedTaskId] = useState(null);
   const [activeMobileCol, setActiveMobileCol] = useState('all');
 
@@ -83,9 +85,26 @@ export default function Board({ tasks = [], profiles = [], onTaskClick, onStatus
             .filter(t => t.status === col.id)
             .sort((a, b) => {
               if (a.pinned !== b.pinned) return b.pinned ? 1 : -1;
-              if (!a.deadline) return 1;
-              if (!b.deadline) return -1;
-              return new Date(a.deadline) - new Date(b.deadline);
+
+              if (sortBy === 'priority_desc') {
+                const wA = priorityWeight[a.priority] || 0;
+                const wB = priorityWeight[b.priority] || 0;
+                if (wA !== wB) return wB - wA;
+              } else if (sortBy === 'deadline_asc') {
+                if (!a.deadline && !b.deadline) return 0;
+                if (!a.deadline) return 1;
+                if (!b.deadline) return -1;
+                const diff = new Date(a.deadline) - new Date(b.deadline);
+                if (diff !== 0) return diff;
+              } else if (sortBy === 'progress_desc') {
+                const diff = (b.progress || 0) - (a.progress || 0);
+                if (diff !== 0) return diff;
+              } else if (sortBy === 'title_asc') {
+                const diff = (a.title || '').localeCompare(b.title || '', 'ru');
+                if (diff !== 0) return diff;
+              }
+
+              return new Date(b.created_at || 0) - new Date(a.created_at || 0);
             });
 
           const isHiddenOnMobile = activeMobileCol !== 'all' && activeMobileCol !== col.id;
