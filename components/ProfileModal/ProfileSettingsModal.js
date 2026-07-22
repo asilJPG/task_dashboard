@@ -9,6 +9,7 @@ export default function ProfileSettingsModal({ isOpen, onClose }) {
   const [name, setName] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [avatar, setAvatar] = useState('👨‍💻');
   const [color, setColor] = useState('#7c3aed');
 
@@ -30,6 +31,8 @@ export default function ProfileSettingsModal({ isOpen, onClose }) {
   }, [profile, isOpen]);
 
   if (!isOpen || !profile) return null;
+
+  const userRole = profile.role || (profile.is_admin ? 'admin' : 'employee');
 
   const handleSave = async (e) => {
     e.preventDefault();
@@ -67,7 +70,7 @@ export default function ProfileSettingsModal({ isOpen, onClose }) {
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal modal-md" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h3>Настройки профиля</h3>
+          <h3>⚙️ Настройки профиля</h3>
           <button className="modal-close" onClick={onClose}>×</button>
         </div>
 
@@ -77,7 +80,18 @@ export default function ProfileSettingsModal({ isOpen, onClose }) {
             {success && <div style={{ background: 'rgba(46, 160, 67, 0.1)', border: '1px solid rgba(46, 160, 67, 0.2)', color: '#3fb950', padding: '8px', borderRadius: '6px', fontSize: '13px', marginBottom: '14px', textAlign: 'center' }}>Настройки сохранены!</div>}
 
             <div className="form-group">
-              <label className="form-label">Ваше имя (русскими буквами)</label>
+              <label className="form-label">Ваш логин для входа</label>
+              <input 
+                type="text" 
+                className="form-input" 
+                value={profile.username || profile.email?.split('@')[0] || ''} 
+                disabled 
+                style={{ opacity: 0.7, cursor: 'not-allowed', background: '#0d1117' }} 
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Ваше имя и фамилия</label>
               <input 
                 type="text" 
                 className="form-input" 
@@ -87,21 +101,49 @@ export default function ProfileSettingsModal({ isOpen, onClose }) {
               />
             </div>
 
+            <div className="form-group">
+              <label className="form-label">Роль в системе</label>
+              <div style={{ fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                {userRole === 'admin' && <span className="status-badge" style={{ backgroundColor: 'rgba(219, 109, 40, 0.15)', color: '#db6d28', fontSize: '12px', padding: '3px 10px', margin: 0 }}>👑 Администратор</span>}
+                {userRole === 'manager' && <span className="status-badge" style={{ backgroundColor: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', fontSize: '12px', padding: '3px 10px', margin: 0 }}>🧑‍💼 Руководитель</span>}
+                {userRole === 'employee' && <span className="status-badge" style={{ backgroundColor: 'rgba(100, 116, 139, 0.15)', color: '#94a3b8', fontSize: '12px', padding: '3px 10px', margin: 0 }}>👨‍💻 Обычный сотрудник</span>}
+              </div>
+            </div>
+
             <div className="form-row">
               <div className="form-group" style={{ flex: 1 }}>
-                <label className="form-label">Новый пароль</label>
-                <input 
-                  type="password" 
-                  className="form-input" 
-                  value={password} 
-                  onChange={(e) => setPassword(e.target.value)} 
-                  required 
-                />
+                <label className="form-label">Пароль</label>
+                <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                  <input 
+                    type={showPassword ? 'text' : 'password'} 
+                    className="form-input" 
+                    value={password} 
+                    onChange={(e) => setPassword(e.target.value)} 
+                    style={{ paddingRight: '36px', width: '100%' }}
+                    required 
+                  />
+                  <button
+                    type="button"
+                    style={{
+                      position: 'absolute',
+                      right: '8px',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      fontSize: '14px',
+                      color: 'var(--text-secondary)'
+                    }}
+                    onClick={() => setShowPassword(!showPassword)}
+                    title={showPassword ? 'Скрыть пароль' : 'Показать пароль'}
+                  >
+                    {showPassword ? '🙈' : '👁️'}
+                  </button>
+                </div>
               </div>
               <div className="form-group" style={{ flex: 1 }}>
-                <label className="form-label">Подтвердите пароль</label>
+                <label className="form-label">Подтверждение пароля</label>
                 <input 
-                  type="password" 
+                  type={showPassword ? 'text' : 'password'} 
                   className="form-input" 
                   value={confirmPassword} 
                   onChange={(e) => setConfirmPassword(e.target.value)} 
@@ -112,7 +154,7 @@ export default function ProfileSettingsModal({ isOpen, onClose }) {
 
             <div className="form-group">
               <label className="form-label">Стикер (Аватар)</label>
-              <div className="avatar-selector" style={{ gridTemplateColumns: 'repeat(9, 1fr)' }}>
+              <div className="avatar-selector">
                 {avatars.map(emoji => (
                   <button 
                     type="button" 

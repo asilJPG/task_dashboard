@@ -1467,31 +1467,42 @@ body {
   }
 }
 
+.admin-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+}
+
 /* 14. Responsive Layouts */
 @media (max-width: 1024px) {
-  .analytics-grid {
+  .analytics-grid, .admin-grid {
     grid-template-columns: 1fr;
+    gap: 20px;
   }
 }
 
 @media (max-width: 768px) {
   .header {
     flex-direction: column;
-    padding: 12px 16px;
-    gap: 12px;
+    padding: 10px 14px;
+    gap: 10px;
   }
   .header-left, .header-right {
     width: 100%;
     justify-content: space-between;
-    gap: 12px;
+    gap: 10px;
   }
   .nav-tabs {
     overflow-x: auto;
     width: 100%;
     margin-left: 0;
-    padding-bottom: 4px;
+    padding-bottom: 6px;
     white-space: nowrap;
     -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; /* Firefox */
+  }
+  .nav-tabs::-webkit-scrollbar {
+    display: none; /* Chrome/Safari */
   }
   .search-bar {
     width: 100%;
@@ -1501,10 +1512,10 @@ body {
     width: 100%;
   }
   .main-content {
-    padding: 16px 12px;
+    padding: 14px 10px;
   }
   .board-toolbar {
-    margin-bottom: 16px;
+    margin-bottom: 14px;
   }
   .board-columns {
     scroll-snap-type: x mandatory;
@@ -1526,16 +1537,25 @@ body {
     width: 100%;
     margin-left: 0;
   }
+  .avatar-selector {
+    grid-template-columns: repeat(6, 1fr) !important;
+  }
 }
 
 @media (max-width: 576px) {
   .modal {
     max-width: 100%;
-    max-height: 92vh;
+    max-height: 90vh;
     border-radius: var(--radius-xl) var(--radius-xl) 0 0;
     position: fixed;
     bottom: 0;
     margin: 0;
+    width: 100%;
+    animation: slideUp 0.25s ease-out;
+  }
+  @keyframes slideUp {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
   }
   .modal-overlay {
     align-items: flex-end;
@@ -1545,10 +1565,17 @@ body {
     padding: 14px 16px;
   }
   .modal-body {
-    padding: 16px;
+    padding: 14px 16px;
+    max-height: calc(90vh - 120px);
+    overflow-y: auto;
   }
   .modal-footer {
     padding: 12px 16px 20px;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .modal-footer button {
+    width: 100%;
   }
   .form-row {
     flex-direction: column;
@@ -1556,20 +1583,23 @@ body {
   }
   .stats-grid {
     grid-template-columns: 1fr 1fr;
-    gap: 12px;
+    gap: 10px;
   }
   .stat-card {
-    padding: 16px 12px;
+    padding: 14px 10px;
   }
   .stat-number {
-    font-size: 20px;
+    font-size: 18px;
   }
   .comment-input-area {
     flex-direction: column;
     gap: 8px;
   }
   .comment-input-area button {
-    align-self: flex-end;
+    width: 100%;
+  }
+  .user-name {
+    display: none;
   }
 }
 

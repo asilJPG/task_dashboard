@@ -94,7 +94,7 @@ export default function AdminPage() {
         Здесь вы можете регистрировать новых сотрудников, назначать им роли и управлять вашей командой.
       </p>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px' }}>
+      <div className="admin-grid">
         {/* User Creation Form */}
         <div className="analytics-card" style={{ height: 'fit-content' }}>
           <h3 style={{ fontSize: '15px', fontWeight: '600', marginBottom: '16px', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>

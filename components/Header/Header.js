@@ -144,6 +144,8 @@ const UserMenu = () => {
     router.push('/login');
   };
 
+  const userRole = profile?.role || (profile?.is_admin ? 'admin' : 'employee');
+
   return (
     <div className="user-menu" ref={dropdownRef} onClick={() => setIsOpen(!isOpen)}>
       <span className="user-avatar" style={{ backgroundColor: profile?.color || 'var(--accent)' }}>
@@ -153,14 +155,23 @@ const UserMenu = () => {
       <span className="dropdown-arrow">▼</span>
       {isOpen && (
         <div className="user-dropdown" onClick={(e) => e.stopPropagation()}>
+          <div style={{ paddingBottom: '8px', marginBottom: '8px', borderBottom: '1px solid var(--border-color)' }}>
+            <div style={{ fontWeight: '600', fontSize: '13px', color: 'var(--text-primary)' }}>{profile?.name}</div>
+            <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>@{profile?.username || profile?.email?.split('@')[0] || 'user'}</div>
+            <div style={{ marginTop: '4px' }}>
+              {userRole === 'admin' && <span className="status-badge" style={{ backgroundColor: 'rgba(219, 109, 40, 0.15)', color: '#db6d28', fontSize: '10px', padding: '1px 6px', margin: 0 }}>👑 Админ</span>}
+              {userRole === 'manager' && <span className="status-badge" style={{ backgroundColor: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', fontSize: '10px', padding: '1px 6px', margin: 0 }}>🧑‍💼 Руководитель</span>}
+              {userRole === 'employee' && <span className="status-badge" style={{ backgroundColor: 'rgba(100, 116, 139, 0.15)', color: '#94a3b8', fontSize: '10px', padding: '1px 6px', margin: 0 }}>👨‍💻 Сотрудник</span>}
+            </div>
+          </div>
           <button 
             className="btn btn-sm btn-secondary btn-full" 
             style={{ marginBottom: '8px' }} 
             onClick={() => { setIsSettingsOpen(true); setIsOpen(false); }}
           >
-            Настройки
+            ⚙️ Настройки
           </button>
-          <button className="btn btn-sm btn-danger btn-full" onClick={handleSignOut}>Выйти</button>
+          <button className="btn btn-sm btn-danger btn-full" onClick={handleSignOut}>🚪 Выйти</button>
         </div>
       )}
       <ProfileSettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
