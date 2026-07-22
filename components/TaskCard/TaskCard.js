@@ -1,12 +1,13 @@
 'use client';
 
 import React from 'react';
-import { getDeadlineStatus, getPriorityLabel } from '@/lib/utils';
+import { getDeadlineStatus, getPriorityLabel, normalizeTags } from '@/lib/utils';
 
 export default function TaskCard({ task, profiles = [], onClick, draggable = true, onDragStart, onDragEnd, dragging }) {
   const creator = profiles.find(p => p.id === task.created_by);
   const assignee = profiles.find(p => p.id === task.assigned_to);
   const deadlineStatus = getDeadlineStatus(task.deadline);
+  const tagsList = normalizeTags(task.tags);
 
   return (
     <div 
@@ -19,9 +20,9 @@ export default function TaskCard({ task, profiles = [], onClick, draggable = tru
       <div className="task-card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
         <span className={`task-priority priority-${task.priority}`}>{getPriorityLabel(task.priority)}</span>
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          {task.tags?.length > 0 && (
+          {tagsList.length > 0 && (
             <span className="task-tag" style={{ margin: 0, fontSize: '10px', padding: '2px 7px', background: 'rgba(124, 58, 237, 0.2)', color: '#a78bfa', border: '1px solid rgba(124, 58, 237, 0.3)', borderRadius: '10px' }}>
-              🏷️ {task.tags[0]} {task.tags.length > 1 ? `+${task.tags.length - 1}` : ''}
+              🏷️ {tagsList[0]} {tagsList.length > 1 ? `+${tagsList.length - 1}` : ''}
             </span>
           )}
           {task.pinned && <span className="task-pin" style={{ fontSize: '12px' }}>📌</span>}
@@ -30,6 +31,16 @@ export default function TaskCard({ task, profiles = [], onClick, draggable = tru
 
       <h4 className="task-title">{task.title}</h4>
       {task.description && <p className="task-description">{task.description}</p>}
+
+      {tagsList.length > 0 && (
+        <div className="task-tags" style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '6px', marginBottom: '8px' }}>
+          {tagsList.map(tag => (
+            <span key={tag} className="task-tag" style={{ fontSize: '10px', padding: '2px 6px', background: 'rgba(124, 58, 237, 0.15)', color: '#a78bfa', border: '1px solid rgba(124, 58, 237, 0.25)', borderRadius: '6px' }}>
+              🏷️ {tag}
+            </span>
+          ))}
+        </div>
+      )}
 
       <div className="task-progress">
         <div className="task-progress-bar">

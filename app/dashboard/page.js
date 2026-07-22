@@ -10,6 +10,7 @@ import TaskDetailModal from '@/components/TaskModal/TaskDetailModal';
 import StopReasonModal from '@/components/TaskModal/StopReasonModal';
 import TeamModal from '@/components/TeamModal/TeamModal';
 import { supabase } from '@/lib/supabase';
+import { normalizeTags } from '@/lib/utils';
 
 export default function KanbanPage() {
   const { user, profile } = useAuth();
@@ -30,14 +31,14 @@ export default function KanbanPage() {
   const [histories, setHistories] = useState({});
 
   const teamMembers = profiles.filter(p => p.username !== 'admin' && !p.is_admin && p.role !== 'admin' && p.id !== user?.id);
-  const allTags = Array.from(new Set(tasks.flatMap(t => t.tags || []).filter(Boolean)));
+  const allTags = Array.from(new Set(tasks.flatMap(t => normalizeTags(t.tags)))).filter(Boolean);
 
   let displayedTasks = tasks;
   if (selectedEmployee !== 'all') {
     displayedTasks = displayedTasks.filter(t => t.assigned_to === selectedEmployee || (Array.isArray(t.assignees) && t.assignees.includes(selectedEmployee)) || t.responsible_id === selectedEmployee);
   }
   if (selectedTag !== 'all') {
-    displayedTasks = displayedTasks.filter(t => t.tags && t.tags.includes(selectedTag));
+    displayedTasks = displayedTasks.filter(t => normalizeTags(t.tags).includes(selectedTag));
   }
 
   useEffect(() => {
