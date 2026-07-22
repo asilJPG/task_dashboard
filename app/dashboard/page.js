@@ -24,15 +24,21 @@ export default function KanbanPage() {
   const [stopTask, setStopTask] = useState(null);
   const [showTeamModal, setShowTeamModal] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState('all');
+  const [selectedTag, setSelectedTag] = useState('all');
   
   const [comments, setComments] = useState({});
   const [histories, setHistories] = useState({});
 
   const teamMembers = profiles.filter(p => p.username !== 'admin' && !p.is_admin && p.role !== 'admin' && p.id !== user?.id);
+  const allTags = Array.from(new Set(tasks.flatMap(t => t.tags || []).filter(Boolean)));
 
-  const displayedTasks = selectedEmployee === 'all'
-    ? tasks
-    : tasks.filter(t => t.assigned_to === selectedEmployee || (Array.isArray(t.assignees) && t.assignees.includes(selectedEmployee)) || t.responsible_id === selectedEmployee);
+  let displayedTasks = tasks;
+  if (selectedEmployee !== 'all') {
+    displayedTasks = displayedTasks.filter(t => t.assigned_to === selectedEmployee || (Array.isArray(t.assignees) && t.assignees.includes(selectedEmployee)) || t.responsible_id === selectedEmployee);
+  }
+  if (selectedTag !== 'all') {
+    displayedTasks = displayedTasks.filter(t => t.tags && t.tags.includes(selectedTag));
+  }
 
   useEffect(() => {
     if (taskIdParam && tasks.length > 0) {
@@ -188,6 +194,23 @@ export default function KanbanPage() {
               {teamMembers.map(m => (
                 <option key={m.id} value={m.id}>
                   👨‍💻 {m.name} (@{m.username})
+                </option>
+              ))}
+            </select>
+          )}
+
+          {/* Tag Filter Select */}
+          {allTags.length > 0 && (
+            <select
+              className="form-select"
+              style={{ padding: '6px 12px', fontSize: '12px', width: 'auto', background: '#161b22', borderColor: 'var(--border-color)', borderRadius: '8px' }}
+              value={selectedTag}
+              onChange={(e) => setSelectedTag(e.target.value)}
+            >
+              <option value="all">🏷️ Все теги ({allTags.length})</option>
+              {allTags.map(tag => (
+                <option key={tag} value={tag}>
+                  🏷️ {tag}
                 </option>
               ))}
             </select>

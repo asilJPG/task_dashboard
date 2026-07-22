@@ -16,20 +16,17 @@ export default function TaskCard({ task, profiles = [], onClick, draggable = tru
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
     >
-      <div className="task-card-header">
+      <div className="task-card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
         <span className={`task-priority priority-${task.priority}`}>{getPriorityLabel(task.priority)}</span>
-        {task.pinned && <span className="task-pin">📌</span>}
-      </div>
-      <h4 className="task-title">{task.title}</h4>
-      {task.description && <p className="task-description">{task.description}</p>}
-      
-      {task.tags?.length > 0 && (
-        <div className="task-tags">
-          {task.tags.map(tag => (
-            <span key={tag} className="task-tag">{tag}</span>
-          ))}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          {task.tags?.length > 0 && (
+            <span className="task-tag" style={{ margin: 0, fontSize: '10px', padding: '2px 7px', background: 'rgba(124, 58, 237, 0.2)', color: '#a78bfa', border: '1px solid rgba(124, 58, 237, 0.3)', borderRadius: '10px' }}>
+              🏷️ {task.tags[0]} {task.tags.length > 1 ? `+${task.tags.length - 1}` : ''}
+            </span>
+          )}
+          {task.pinned && <span className="task-pin" style={{ fontSize: '12px' }}>📌</span>}
         </div>
-      )}
+      </div>
 
       <div className="task-progress">
         <div className="task-progress-bar">
