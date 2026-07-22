@@ -11,14 +11,18 @@ CREATE TABLE IF NOT EXISTS tb_profiles (
   name TEXT NOT NULL,
   avatar TEXT DEFAULT '🧑‍💻',
   color TEXT DEFAULT '#7c3aed',
+  role TEXT DEFAULT 'employee',
   is_admin BOOLEAN DEFAULT false,
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
+-- Migration for existing databases
+ALTER TABLE tb_profiles ADD COLUMN IF NOT EXISTS role TEXT DEFAULT 'employee';
+
 -- Seed default Administrator account
 -- You can log in using: Login: admin, Password: adminpassword
-INSERT INTO tb_profiles (username, password, name, avatar, color, is_admin)
-VALUES ('admin', 'adminpassword', 'Администратор', '👑', '#f59e0b', true)
+INSERT INTO tb_profiles (username, password, name, avatar, color, role, is_admin)
+VALUES ('admin', 'adminpassword', 'Администратор', '👑', '#f59e0b', 'admin', true)
 ON CONFLICT (username) DO NOTHING;
 
 

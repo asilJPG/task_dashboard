@@ -11,8 +11,8 @@ import StopReasonModal from '@/components/TaskModal/StopReasonModal';
 import { supabase } from '@/lib/supabase';
 
 export default function KanbanPage() {
-  const { user } = useAuth();
-  const { tasks, createTask, updateTask, changeStatus, deleteTask, addComment } = useTasks(user?.id);
+  const { user, profile } = useAuth();
+  const { tasks, createTask, updateTask, changeStatus, deleteTask, addComment } = useTasks(user?.id, profile);
   const searchParams = useSearchParams();
   const taskIdParam = searchParams.get('task');
   

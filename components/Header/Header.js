@@ -10,8 +10,8 @@ import { formatRelativeTime } from '@/lib/utils';
 import ProfileSettingsModal from '../ProfileModal/ProfileSettingsModal';
 
 const SearchBar = () => {
-  const { user } = useAuth();
-  const { query, setQuery, results, searching } = useSearch(user?.id);
+  const { user, profile } = useAuth();
+  const { query, setQuery, results, searching } = useSearch(user?.id, profile);
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef(null);
 

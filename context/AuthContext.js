@@ -93,24 +93,27 @@ export function AuthProvider({ children }) {
     }
   };
 
-  const adminCreateUser = async (username, password, name, avatar, color) => {
+  const adminCreateUser = async (username, password, name, avatar, color, role = 'employee') => {
     const cleanUsername = username.toLowerCase().trim();
+    const isAdmin = role === 'admin';
     
     if (isMock) {
       const profiles = JSON.parse(localStorage.getItem('mock_profiles') || '[]');
-      if (profiles.some(p => p.email.split('@')[0] === cleanUsername)) {
+      if (profiles.some(p => p.username === cleanUsername || p.email?.split('@')[0] === cleanUsername)) {
         return { error: { message: 'Пользователь с таким логином уже существует.' } };
       }
       
       const newUserId = 'user_' + Date.now();
       const newProfile = { 
         id: newUserId, 
+        username: cleanUsername,
         name, 
         avatar, 
         color, 
         email: `${cleanUsername}@taskboard.local`, 
         password,
-        is_admin: false 
+        role,
+        is_admin: isAdmin 
       };
       profiles.push(newProfile);
       localStorage.setItem('mock_profiles', JSON.stringify(profiles));
@@ -127,7 +130,7 @@ export function AuthProvider({ children }) {
         return { error: { message: 'Пользователь с таким логином уже существует.' } };
       }
 
-      // 2. Insert profile directly with username and password
+      // 2. Insert profile directly with username, password and role
       const { data, error } = await supabase
         .from('tb_profiles')
         .insert([{
@@ -136,11 +139,38 @@ export function AuthProvider({ children }) {
           name,
           avatar: avatar || '🧑‍💻',
           color: color || '#7c3aed',
-          is_admin: false
+          role,
+          is_admin: isAdmin
         }])
         .select()
         .single();
 
+      return { data, error };
+    }
+  };
+
+  const updateUserRole = async (targetUserId, newRole) => {
+    const isAdmin = newRole === 'admin';
+    if (isMock) {
+      const profiles = JSON.parse(localStorage.getItem('mock_profiles') || '[]');
+      const updatedProfiles = profiles.map(p => p.id === targetUserId ? { ...p, role: newRole, is_admin: isAdmin } : p);
+      localStorage.setItem('mock_profiles', JSON.stringify(updatedProfiles));
+      
+      if (profile && profile.id === targetUserId) {
+        setProfile({ ...profile, role: newRole, is_admin: isAdmin });
+      }
+      return { data: { id: targetUserId, role: newRole, is_admin: isAdmin }, error: null };
+    } else {
+      const { data, error } = await supabase
+        .from('tb_profiles')
+        .update({ role: newRole, is_admin: isAdmin })
+        .eq('id', targetUserId)
+        .select()
+        .single();
+        
+      if (data && !error && profile && profile.id === targetUserId) {
+        setProfile(data);
+      }
       return { data, error };
     }
   };
@@ -179,7 +209,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, signIn, adminCreateUser, updateProfile, signOut }}>
+    <AuthContext.Provider value={{ user, profile, loading, signIn, adminCreateUser, updateUserRole, updateProfile, signOut }}>
       {children}
     </AuthContext.Provider>
   );

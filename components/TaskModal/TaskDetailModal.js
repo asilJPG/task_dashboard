@@ -107,17 +107,21 @@ export default function TaskDetailModal({
 
           <div className="detail-row" style={{ marginBottom: '20px' }}>
             <span className="detail-label">Прогресс ({localProgress}%):</span>
-            <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <input 
-                type="range" 
-                min="0" max="100" 
-                value={localProgress}
-                onChange={(e) => setLocalProgress(Number(e.target.value))}
-                onMouseUp={() => onProgressChange(task.id, localProgress)}
-                onTouchEnd={() => onProgressChange(task.id, localProgress)}
-                className="form-range"
-                style={{ flex: 1, margin: 0 }}
-              />
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+              {[0, 25, 50, 75, 100].map(val => (
+                <button
+                  type="button"
+                  key={val}
+                  className={`btn btn-sm ${localProgress === val ? 'btn-primary' : 'btn-secondary'}`}
+                  style={{ padding: '4px 12px', fontSize: '12px' }}
+                  onClick={() => {
+                    setLocalProgress(val);
+                    onProgressChange(val);
+                  }}
+                >
+                  {val}%
+                </button>
+              ))}
             </div>
           </div>
 
@@ -139,10 +143,34 @@ export default function TaskDetailModal({
           <div style={{ marginBottom: '24px' }}>
             <h4 style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '8px' }}>Быстрая смена статуса</h4>
             <div className="detail-actions-row">
-              <button className="btn btn-sm btn-secondary" onClick={() => onStatusChange(task.id, 'new')}>📋 В новые</button>
-              <button className="btn btn-sm btn-secondary" onClick={() => onStatusChange(task.id, 'in_progress')}>🔄 В работу</button>
-              <button className="btn btn-sm btn-secondary" onClick={() => onStatusChange(task.id, 'stopped')}>🛑 На стоп</button>
-              <button className="btn btn-sm btn-secondary" onClick={() => onStatusChange(task.id, 'done')}>✅ Выполнено</button>
+              <button 
+                type="button"
+                className={`btn btn-sm ${task.status === 'new' ? 'btn-primary' : 'btn-secondary'}`} 
+                onClick={() => onStatusChange('new')}
+              >
+                📋 В новые
+              </button>
+              <button 
+                type="button"
+                className={`btn btn-sm ${task.status === 'in_progress' ? 'btn-primary' : 'btn-secondary'}`} 
+                onClick={() => onStatusChange('in_progress')}
+              >
+                🔄 В работу
+              </button>
+              <button 
+                type="button"
+                className={`btn btn-sm ${task.status === 'stopped' ? 'btn-primary' : 'btn-secondary'}`} 
+                onClick={() => onStatusChange('stopped')}
+              >
+                🛑 На стоп
+              </button>
+              <button 
+                type="button"
+                className={`btn btn-sm ${task.status === 'done' ? 'btn-primary' : 'btn-secondary'}`} 
+                onClick={() => onStatusChange('done')}
+              >
+                ✅ Выполнено
+              </button>
             </div>
           </div>
 

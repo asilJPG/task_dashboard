@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 
 export default function AdminPage() {
-  const { profile, loading, adminCreateUser } = useAuth();
+  const { profile, loading, adminCreateUser, updateUserRole } = useAuth();
   const router = useRouter();
 
   const [usersList, setUsersList] = useState([]);
@@ -15,6 +15,7 @@ export default function AdminPage() {
   const [name, setName] = useState('');
   const [avatar, setAvatar] = useState('👨‍💻');
   const [color, setColor] = useState('#7c3aed');
+  const [role, setRole] = useState('employee');
   
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
@@ -29,14 +30,14 @@ export default function AdminPage() {
   };
 
   useEffect(() => {
-    if (!loading && (!profile || !profile.is_admin)) {
+    if (!loading && (!profile || (!profile.is_admin && profile.role !== 'admin'))) {
       router.push('/dashboard');
     } else {
       fetchUsers();
     }
   }, [profile, loading, router]);
 
-  if (loading || !profile || !profile.is_admin) {
+  if (loading || !profile || (!profile.is_admin && profile.role !== 'admin')) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
         <div className="spinner"></div>
@@ -56,15 +57,17 @@ export default function AdminPage() {
       if (password.length < 6) throw new Error('Пароль должен состоять минимум из 6 символов');
       if (!name.trim()) throw new Error('Пожалуйста, введите имя сотрудника');
 
-      const { error: createError } = await adminCreateUser(username, password, name, avatar, color);
+      const { error: createError } = await adminCreateUser(username, password, name, avatar, color, role);
       if (createError) throw createError;
 
-      setSuccess(`Пользователь "${name}" успешно создан! Логин: ${username.toLowerCase()}`);
+      const roleLabel = role === 'manager' ? 'Руководитель' : role === 'admin' ? 'Администратор' : 'Обычный сотрудник';
+      setSuccess(`Пользователь "${name}" (${roleLabel}) успешно создан! Логин: ${username.toLowerCase()}`);
       setUsername('');
       setPassword('');
       setName('');
       setAvatar('👨‍💻');
       setColor('#7c3aed');
+      setRole('employee');
       
       // Refresh list of users
       fetchUsers();
@@ -75,11 +78,20 @@ export default function AdminPage() {
     }
   };
 
+  const handleRoleChange = async (targetUserId, newRole) => {
+    const { error: updateError } = await updateUserRole(targetUserId, newRole);
+    if (!updateError) {
+      fetchUsers();
+    } else {
+      alert('Ошибка при изменении роли: ' + (updateError.message || 'Не удалось обновить'));
+    }
+  };
+
   return (
     <div className="dashboard-view" style={{ maxWidth: '1000px', margin: '0 auto' }}>
       <h2>⚙️ Панель администратора</h2>
       <p style={{ color: 'var(--text-secondary)', marginBottom: '24px', fontSize: '13px' }}>
-        Здесь вы можете регистрировать новых сотрудников и управлять списком вашей команды.
+        Здесь вы можете регистрировать новых сотрудников, назначать им роли и управлять вашей командой.
       </p>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px' }}>
@@ -130,6 +142,19 @@ export default function AdminPage() {
             </div>
 
             <div className="form-group">
+              <label className="form-label">Роль в системе</label>
+              <select 
+                className="form-select" 
+                value={role} 
+                onChange={e => setRole(e.target.value)}
+              >
+                <option value="employee">👨‍💻 Обычный сотрудник (видит только свои задачи)</option>
+                <option value="manager">🧑‍💼 Руководитель (видит все задачи и аналитику)</option>
+                <option value="admin">👑 Администратор (полный доступ)</option>
+              </select>
+            </div>
+
+            <div className="form-group">
               <label className="form-label">Аватар сотрудника</label>
               <div className="avatar-selector">
                 {avatars.map(emoji => (
@@ -173,42 +198,65 @@ export default function AdminPage() {
           </h3>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: '550px', overflowY: 'auto', paddingRight: '4px' }}>
-            {usersList.map(u => (
-              <div 
-                key={u.id} 
-                className="comment" 
-                style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: '12px', 
-                  padding: '10px 14px', 
-                  border: '1px solid var(--border-color)',
-                  background: '#0d1117'
-                }}
-              >
+            {usersList.map(u => {
+              const currentRole = u.role || (u.is_admin ? 'admin' : 'employee');
+              return (
                 <div 
-                  className="avatar-circle" 
+                  key={u.id} 
+                  className="comment" 
                   style={{ 
-                    backgroundColor: u.color || 'var(--accent)', 
-                    width: '32px', 
-                    height: '32px', 
-                    fontSize: '16px',
-                    flexShrink: 0
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '12px', 
+                    padding: '10px 14px', 
+                    border: '1px solid var(--border-color)',
+                    background: '#0d1117'
                   }}
                 >
-                  {u.avatar || '👤'}
-                </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: '600', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    {u.name}
-                    {u.is_admin && <span className="status-badge" style={{ backgroundColor: 'rgba(219, 109, 40, 0.1)', color: '#db6d28', fontSize: '10px', padding: '1px 6px', margin: 0 }}>Админ</span>}
+                  <div 
+                    className="avatar-circle" 
+                    style={{ 
+                      backgroundColor: u.color || 'var(--accent)', 
+                      width: '32px', 
+                      height: '32px', 
+                      fontSize: '16px',
+                      flexShrink: 0
+                    }}
+                  >
+                    {u.avatar || '👤'}
                   </div>
-                  <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
-                    Логин: {u.username || u.email?.split('@')[0]}
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: '600', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      {u.name}
+                      {currentRole === 'admin' && (
+                        <span className="status-badge" style={{ backgroundColor: 'rgba(219, 109, 40, 0.15)', color: '#db6d28', fontSize: '10px', padding: '1px 6px', margin: 0 }}>Админ</span>
+                      )}
+                      {currentRole === 'manager' && (
+                        <span className="status-badge" style={{ backgroundColor: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', fontSize: '10px', padding: '1px 6px', margin: 0 }}>Руководитель</span>
+                      )}
+                      {currentRole === 'employee' && (
+                        <span className="status-badge" style={{ backgroundColor: 'rgba(100, 116, 139, 0.15)', color: '#94a3b8', fontSize: '10px', padding: '1px 6px', margin: 0 }}>Сотрудник</span>
+                      )}
+                    </div>
+                    <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+                      Логин: {u.username || u.email?.split('@')[0]}
+                    </div>
+                  </div>
+                  <div>
+                    <select
+                      className="form-select"
+                      style={{ padding: '4px 8px', fontSize: '11px', width: 'auto', background: '#161b22', borderColor: 'var(--border-color)', borderRadius: '6px' }}
+                      value={currentRole}
+                      onChange={(e) => handleRoleChange(u.id, e.target.value)}
+                    >
+                      <option value="employee">👨‍💻 Сотрудник</option>
+                      <option value="manager">🧑‍💼 Руководитель</option>
+                      <option value="admin">👑 Админ</option>
+                    </select>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>

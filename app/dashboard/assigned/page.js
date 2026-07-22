@@ -8,8 +8,8 @@ import TaskCard from '@/components/TaskCard/TaskCard';
 import { supabase } from '@/lib/supabase';
 
 export default function AssignedTasksPage() {
-  const { user } = useAuth();
-  const { tasks, updateTask, changeStatus, deleteTask, addComment } = useTasks(user?.id);
+  const { user, profile } = useAuth();
+  const { tasks, updateTask, changeStatus, deleteTask, addComment } = useTasks(user?.id, profile);
   
   const [profiles, setProfiles] = useState([]);
   const [detailTask, setDetailTask] = useState(null);

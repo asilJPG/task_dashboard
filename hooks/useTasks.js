@@ -3,22 +3,27 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 
-export function useTasks(userId) {
+export function useTasks(userId, profile) {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  const isManagerOrAdmin = profile?.role === 'manager' || profile?.role === 'admin' || profile?.is_admin === true;
 
   const fetchTasks = useCallback(async () => {
     if (!userId) return;
     setLoading(true);
-    const { data, error } = await supabase
-      .from('tb_tasks')
-      .select('*')
-      .or(`created_by.eq.${userId},assigned_to.eq.${userId}`);
+
+    let queryBuilder = supabase.from('tb_tasks').select('*');
+    if (!isManagerOrAdmin) {
+      queryBuilder = queryBuilder.or(`created_by.eq.${userId},assigned_to.eq.${userId}`);
+    }
+
+    const { data, error } = await queryBuilder;
     
     if (data) setTasks(data);
     if (error) console.error('Error fetching tasks:', error);
     setLoading(false);
-  }, [userId]);
+  }, [userId, isManagerOrAdmin]);
 
   useEffect(() => {
     if (!userId) {
@@ -33,11 +38,11 @@ export function useTasks(userId) {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'tb_tasks' }, payload => {
         const { eventType, new: newRec, old: oldRec } = payload;
         if (eventType === 'INSERT') {
-          if (newRec.created_by === userId || newRec.assigned_to === userId) {
+          if (isManagerOrAdmin || newRec.created_by === userId || newRec.assigned_to === userId) {
             setTasks(prev => [newRec, ...prev]);
           }
         } else if (eventType === 'UPDATE') {
-          if (newRec.created_by === userId || newRec.assigned_to === userId) {
+          if (isManagerOrAdmin || newRec.created_by === userId || newRec.assigned_to === userId) {
             setTasks(prev => {
               const exists = prev.some(t => t.id === newRec.id);
               if (exists) {
@@ -58,7 +63,7 @@ export function useTasks(userId) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [userId, fetchTasks]);
+  }, [userId, fetchTasks, isManagerOrAdmin]);
 
   const sendNotification = async (recipientId, type, taskId, message) => {
     if (!recipientId || recipientId === userId) return;

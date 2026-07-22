@@ -6,8 +6,8 @@ import { useTasks } from '@/hooks/useTasks';
 import { supabase } from '@/lib/supabase';
 
 export default function AnalyticsPage() {
-  const { user } = useAuth();
-  const { tasks } = useTasks(user?.id);
+  const { user, profile } = useAuth();
+  const { tasks } = useTasks(user?.id, profile);
   const canvasRef = useRef(null);
   const [profiles, setProfiles] = useState([]);
 
