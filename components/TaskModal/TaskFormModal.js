@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { normalizeTags } from '@/lib/utils';
 
 export default function TaskFormModal({ isOpen, onClose, onSave, task, profiles = [], currentUser }) {
   const [title, setTitle] = useState('');
@@ -27,7 +28,7 @@ export default function TaskFormModal({ isOpen, onClose, onSave, task, profiles 
       setPriority(task.priority || 'medium');
       setDeadline(task.deadline || '');
       setProgress(task.progress || 0);
-      setTags(task.tags || []);
+      setTags(normalizeTags(task.tags));
     } else {
       setTitle('');
       setDescription('');
@@ -58,13 +59,18 @@ export default function TaskFormModal({ isOpen, onClose, onSave, task, profiles 
     });
   };
 
-  const handleTagAdd = (e) => {
-    if (e.key === 'Enter' && tagInput.trim()) {
-      e.preventDefault();
-      if (!tags.includes(tagInput.trim())) {
-        setTags([...tags, tagInput.trim()]);
-      }
+  const addCurrentTag = () => {
+    const trimmed = tagInput.trim();
+    if (trimmed && !tags.includes(trimmed)) {
+      setTags(prev => [...prev, trimmed]);
       setTagInput('');
+    }
+  };
+
+  const handleTagAdd = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      addCurrentTag();
     }
   };
 
@@ -80,6 +86,11 @@ export default function TaskFormModal({ isOpen, onClose, onSave, task, profiles 
     }
     const finalResponsible = responsibleId || assignees[0];
 
+    let finalTags = [...tags];
+    if (tagInput.trim() && !finalTags.includes(tagInput.trim())) {
+      finalTags.push(tagInput.trim());
+    }
+
     const payload = {
       title,
       description,
@@ -89,7 +100,7 @@ export default function TaskFormModal({ isOpen, onClose, onSave, task, profiles 
       priority,
       deadline: deadline || null,
       progress,
-      tags
+      tags: finalTags
     };
     if (task?.id) {
       payload.id = task.id;
@@ -211,22 +222,33 @@ export default function TaskFormModal({ isOpen, onClose, onSave, task, profiles 
             )}
 
             <div className="form-group">
-              <label className="form-label">Теги</label>
-              <div className="tag-input-container">
-                <div className="tag-list">
+              <label className="form-label">Теги задачи</label>
+              {tags.length > 0 && (
+                <div className="tag-list" style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '8px' }}>
                   {tags.map(tag => (
-                    <span key={tag} className="tag-pill">
-                      {tag} <button type="button" className="tag-remove" onClick={() => removeTag(tag)}>×</button>
+                    <span key={tag} className="tag-pill" style={{ background: 'rgba(124, 58, 237, 0.2)', color: '#a78bfa', border: '1px solid rgba(124, 58, 237, 0.3)', padding: '4px 10px', borderRadius: '14px', fontSize: '12px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                      🏷️ {tag} <button type="button" className="tag-remove" style={{ background: 'none', border: 'none', color: '#a78bfa', cursor: 'pointer', fontSize: '14px', padding: 0 }} onClick={() => removeTag(tag)}>×</button>
                     </span>
                   ))}
                 </div>
+              )}
+              <div style={{ display: 'flex', gap: '8px' }}>
                 <input 
-                  className="tag-input" 
-                  placeholder="Добавить тег (Enter)" 
+                  className="form-input" 
+                  style={{ flex: 1 }}
+                  placeholder="Введи тег (например: Срочно, Дизайн, Офис)..." 
                   value={tagInput} 
                   onChange={(e) => setTagInput(e.target.value)}
                   onKeyDown={handleTagAdd}
                 />
+                <button 
+                  type="button" 
+                  className="btn btn-secondary" 
+                  style={{ padding: '6px 14px', fontSize: '12px' }}
+                  onClick={addCurrentTag}
+                >
+                  + Добавить тег
+                </button>
               </div>
             </div>
 
