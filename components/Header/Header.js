@@ -182,26 +182,55 @@ const UserMenu = () => {
 export default function Header() {
   const pathname = usePathname();
   const { profile } = useAuth();
+  const userRole = profile?.role || (profile?.is_admin ? 'admin' : 'employee');
 
   return (
-    <header className="header">
-      <div className="header-left">
-        <Link href="/dashboard" className="logo">📋 TaskBoard</Link>
-        <nav className="nav-tabs">
-          <Link href="/dashboard" className={`nav-tab ${pathname === '/dashboard' ? 'active' : ''}`}>📋 Доска задач</Link>
-          <Link href="/dashboard/my-tasks" className={`nav-tab ${pathname === '/dashboard/my-tasks' ? 'active' : ''}`}>📥 Мои задачи</Link>
-          <Link href="/dashboard/assigned" className={`nav-tab ${pathname === '/dashboard/assigned' ? 'active' : ''}`}>📤 Я назначил</Link>
-          <Link href="/dashboard/analytics" className={`nav-tab ${pathname === '/dashboard/analytics' ? 'active' : ''}`}>📊 Аналитика</Link>
-          {profile?.is_admin && (
-            <Link href="/dashboard/admin" className={`nav-tab ${pathname === '/dashboard/admin' ? 'active' : ''}`}>⚙️ Админка</Link>
-          )}
-        </nav>
-      </div>
-      <div className="header-right">
-        <SearchBar />
-        <NotificationBell />
-        <UserMenu />
-      </div>
-    </header>
+    <>
+      <header className="header">
+        <div className="header-left">
+          <Link href="/dashboard" className="logo">📋 TaskBoard</Link>
+          <nav className="nav-tabs desktop-only-nav">
+            <Link href="/dashboard" className={`nav-tab ${pathname === '/dashboard' ? 'active' : ''}`}>📋 Доска задач</Link>
+            <Link href="/dashboard/my-tasks" className={`nav-tab ${pathname === '/dashboard/my-tasks' ? 'active' : ''}`}>📥 Мои задачи</Link>
+            <Link href="/dashboard/assigned" className={`nav-tab ${pathname === '/dashboard/assigned' ? 'active' : ''}`}>📤 Я назначил</Link>
+            <Link href="/dashboard/analytics" className={`nav-tab ${pathname === '/dashboard/analytics' ? 'active' : ''}`}>📊 Аналитика</Link>
+            {(userRole === 'admin' || profile?.is_admin) && (
+              <Link href="/dashboard/admin" className={`nav-tab ${pathname === '/dashboard/admin' ? 'active' : ''}`}>⚙️ Админка</Link>
+            )}
+          </nav>
+        </div>
+        <div className="header-right">
+          <SearchBar />
+          <NotificationBell />
+          <UserMenu />
+        </div>
+      </header>
+
+      {/* Mobile Bottom Navigation Bar */}
+      <nav className="mobile-bottom-nav">
+        <Link href="/dashboard" className={`mobile-nav-item ${pathname === '/dashboard' ? 'active' : ''}`}>
+          <span className="mobile-nav-icon">📋</span>
+          <span className="mobile-nav-label">Доска</span>
+        </Link>
+        <Link href="/dashboard/my-tasks" className={`mobile-nav-item ${pathname === '/dashboard/my-tasks' ? 'active' : ''}`}>
+          <span className="mobile-nav-icon">📥</span>
+          <span className="mobile-nav-label">Мои</span>
+        </Link>
+        <Link href="/dashboard/assigned" className={`mobile-nav-item ${pathname === '/dashboard/assigned' ? 'active' : ''}`}>
+          <span className="mobile-nav-icon">📤</span>
+          <span className="mobile-nav-label">Я назначил</span>
+        </Link>
+        <Link href="/dashboard/analytics" className={`mobile-nav-item ${pathname === '/dashboard/analytics' ? 'active' : ''}`}>
+          <span className="mobile-nav-icon">📊</span>
+          <span className="mobile-nav-label">Аналитика</span>
+        </Link>
+        {(userRole === 'admin' || profile?.is_admin) && (
+          <Link href="/dashboard/admin" className={`mobile-nav-item ${pathname === '/dashboard/admin' ? 'active' : ''}`}>
+            <span className="mobile-nav-icon">⚙️</span>
+            <span className="mobile-nav-label">Админ</span>
+          </Link>
+        )}
+      </nav>
+    </>
   );
 }

@@ -178,6 +178,17 @@ export default function KanbanPage() {
         currentUserId={user?.id}
       />
 
+      {/* Mobile Floating Action Button */}
+      <button 
+        type="button" 
+        className="mobile-fab-btn" 
+        onClick={() => { setEditingTask(null); setShowTaskForm(true); }}
+        title="Создать новую задачу"
+      >
+        <span>+</span>
+        <span className="fab-label">Задача</span>
+      </button>
+
       {showTaskForm && (
         <TaskFormModal
           isOpen={showTaskForm}

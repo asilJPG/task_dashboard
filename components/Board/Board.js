@@ -12,6 +12,7 @@ const columns = [
 
 export default function Board({ tasks = [], profiles = [], onTaskClick, onStatusChange, currentUserId }) {
   const [draggedTaskId, setDraggedTaskId] = useState(null);
+  const [activeMobileCol, setActiveMobileCol] = useState('all');
 
   const handleDragStart = (e, taskId) => {
     setDraggedTaskId(taskId);
@@ -39,8 +40,43 @@ export default function Board({ tasks = [], profiles = [], onTaskClick, onStatus
     setDraggedTaskId(null);
   };
 
+  const scrollToColumn = (colId) => {
+    setActiveMobileCol(colId);
+    if (colId !== 'all') {
+      const el = document.getElementById(`board-col-${colId}`);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', inline: 'start', block: 'nearest' });
+      }
+    }
+  };
+
   return (
     <div className="board">
+      {/* Mobile Column Quick Switcher */}
+      <div className="mobile-board-pills">
+        <button
+          type="button"
+          className={`mobile-board-pill ${activeMobileCol === 'all' ? 'active' : ''}`}
+          onClick={() => scrollToColumn('all')}
+        >
+          Все ({tasks.length})
+        </button>
+        {columns.map(col => {
+          const count = tasks.filter(t => t.status === col.id).length;
+          return (
+            <button
+              key={col.id}
+              type="button"
+              className={`mobile-board-pill ${activeMobileCol === col.id ? 'active' : ''}`}
+              style={{ '--pill-color': col.color }}
+              onClick={() => scrollToColumn(col.id)}
+            >
+              {col.icon} {col.title} ({count})
+            </button>
+          );
+        })}
+      </div>
+
       <div className="board-columns">
         {columns.map(col => {
           const colTasks = tasks
@@ -52,8 +88,14 @@ export default function Board({ tasks = [], profiles = [], onTaskClick, onStatus
               return new Date(a.deadline) - new Date(b.deadline);
             });
 
+          const isHiddenOnMobile = activeMobileCol !== 'all' && activeMobileCol !== col.id;
+
           return (
-            <div key={col.id} className="board-column">
+            <div 
+              key={col.id} 
+              id={`board-col-${col.id}`} 
+              className={`board-column ${isHiddenOnMobile ? 'mobile-hidden' : ''}`}
+            >
               <div className="column-header" style={{ borderTopColor: col.color }}>
                 <span className="column-icon">{col.icon}</span>
                 <span className="column-title">{col.title}</span>
