@@ -177,7 +177,7 @@ export default function Header() {
       <div className="header-left">
         <Link href="/dashboard" className="logo">📋 TaskBoard</Link>
         <nav className="nav-tabs">
-          <Link href="/dashboard" className={`nav-tab ${pathname === '/dashboard' ? 'active' : ''}`}>🗂 Доска</Link>
+          <Link href="/dashboard" className={`nav-tab ${pathname === '/dashboard' ? 'active' : ''}`}>📋 Доска задач</Link>
           <Link href="/dashboard/my-tasks" className={`nav-tab ${pathname === '/dashboard/my-tasks' ? 'active' : ''}`}>📥 Мои задачи</Link>
           <Link href="/dashboard/assigned" className={`nav-tab ${pathname === '/dashboard/assigned' ? 'active' : ''}`}>📤 Я назначил</Link>
           <Link href="/dashboard/analytics" className={`nav-tab ${pathname === '/dashboard/analytics' ? 'active' : ''}`}>📊 Аналитика</Link>

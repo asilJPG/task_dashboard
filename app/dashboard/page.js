@@ -164,7 +164,7 @@ export default function KanbanPage() {
   return (
     <div className="dashboard-container">
       <div className="board-toolbar">
-        <h2>Канбан-доска</h2>
+        <h2>📋 Доска задач</h2>
         <button className="btn btn-primary" onClick={() => { setEditingTask(null); setShowTaskForm(true); }}>
           + Новая задача
         </button>
