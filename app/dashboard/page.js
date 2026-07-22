@@ -8,6 +8,7 @@ import Board from '@/components/Board/Board';
 import TaskFormModal from '@/components/TaskModal/TaskFormModal';
 import TaskDetailModal from '@/components/TaskModal/TaskDetailModal';
 import StopReasonModal from '@/components/TaskModal/StopReasonModal';
+import TeamModal from '@/components/TeamModal/TeamModal';
 import { supabase } from '@/lib/supabase';
 
 export default function KanbanPage() {
@@ -21,9 +22,17 @@ export default function KanbanPage() {
   const [editingTask, setEditingTask] = useState(null);
   const [detailTask, setDetailTask] = useState(null);
   const [stopTask, setStopTask] = useState(null);
+  const [showTeamModal, setShowTeamModal] = useState(false);
+  const [selectedEmployee, setSelectedEmployee] = useState('all');
   
   const [comments, setComments] = useState({});
   const [histories, setHistories] = useState({});
+
+  const teamMembers = profiles.filter(p => p.username !== 'admin' && !p.is_admin && p.role !== 'admin' && p.id !== user?.id);
+
+  const displayedTasks = selectedEmployee === 'all'
+    ? tasks
+    : tasks.filter(t => t.assigned_to === selectedEmployee || (Array.isArray(t.assignees) && t.assignees.includes(selectedEmployee)) || t.responsible_id === selectedEmployee);
 
   useEffect(() => {
     if (taskIdParam && tasks.length > 0) {
@@ -163,19 +172,59 @@ export default function KanbanPage() {
 
   return (
     <div className="dashboard-container">
-      <div className="board-toolbar">
-        <h2>📋 Доска задач</h2>
-        <button className="btn btn-primary" onClick={() => { setEditingTask(null); setShowTaskForm(true); }}>
-          + Новая задача
-        </button>
+      <div className="board-toolbar" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <h2>📋 Доска задач</h2>
+          
+          {/* Employee Filter Select for Managers and Team */}
+          {teamMembers.length > 0 && (
+            <select
+              className="form-select"
+              style={{ padding: '6px 12px', fontSize: '12px', width: 'auto', background: '#161b22', borderColor: 'var(--border-color)', borderRadius: '8px' }}
+              value={selectedEmployee}
+              onChange={(e) => setSelectedEmployee(e.target.value)}
+            >
+              <option value="all">👥 Все сотрудники ({tasks.length})</option>
+              {teamMembers.map(m => (
+                <option key={m.id} value={m.id}>
+                  👨‍💻 {m.name} (@{m.username})
+                </option>
+              ))}
+            </select>
+          )}
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <button 
+            type="button"
+            className="btn btn-secondary" 
+            style={{ padding: '6px 14px', fontSize: '13px' }}
+            onClick={() => setShowTeamModal(true)}
+          >
+            👥 Команда ({teamMembers.length})
+          </button>
+          
+          <button className="btn btn-primary" onClick={() => { setEditingTask(null); setShowTaskForm(true); }}>
+            + Новая задача
+          </button>
+        </div>
       </div>
 
       <Board 
-        tasks={tasks}
+        tasks={displayedTasks}
         profiles={profiles}
         onTaskClick={handleTaskClick}
         onStatusChange={handleStatusChange}
         currentUserId={user?.id}
+      />
+
+      <TeamModal
+        isOpen={showTeamModal}
+        onClose={() => setShowTeamModal(false)}
+        profiles={profiles}
+        tasks={tasks}
+        currentUserId={user?.id}
+        onSelectEmployee={(empId) => setSelectedEmployee(empId)}
       />
 
       {/* Mobile Floating Action Button */}
