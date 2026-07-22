@@ -6,7 +6,10 @@ const inter = Inter({ subsets: ['latin', 'cyrillic'], weight: ['300', '400', '50
 
 export const metadata = {
   title: 'TaskBoard — Управление задачами',
-  description: 'Канбан-доска для управления задачами и проектами',
+  description: 'Доска для управления задачами и проектами',
+  icons: {
+    icon: '/icon.svg',
+  },
 };
 
 export default function RootLayout({ children }) {
