@@ -93,9 +93,16 @@ export default function AssignedTasksPage() {
   };
 
   const groupedTasks = assignedTasks.reduce((acc, task) => {
-    const assigneeId = task.assigned_to;
-    if (!acc[assigneeId]) acc[assigneeId] = [];
-    acc[assigneeId].push(task);
+    const targetAssignees = Array.isArray(task.assignees) && task.assignees.length > 0
+      ? task.assignees
+      : [task.assigned_to];
+    
+    targetAssignees.forEach(assigneeId => {
+      if (!acc[assigneeId]) acc[assigneeId] = [];
+      if (!acc[assigneeId].some(t => t.id === task.id)) {
+        acc[assigneeId].push(task);
+      }
+    });
     return acc;
   }, {});
 

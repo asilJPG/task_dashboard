@@ -84,7 +84,11 @@ export default function MyTasksPage() {
 
   if (!user) return null;
 
-  const myTasks = tasks.filter(t => t.assigned_to === user.id);
+  const myTasks = tasks.filter(t => 
+    t.assigned_to === user.id || 
+    t.responsible_id === user.id || 
+    (Array.isArray(t.assignees) && t.assignees.includes(user.id))
+  );
   
   const filteredTasks = activeFilter === 'all' 
     ? myTasks 
