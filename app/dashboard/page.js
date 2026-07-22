@@ -120,8 +120,21 @@ export default function KanbanPage() {
   };
 
   const handleStatusChange = (taskId, newStatus) => {
+    const task = tasks.find(t => t.id === taskId);
+    if (!task) return;
+
+    const isResponsibleOrAdmin = user?.id === (task.responsible_id || task.assigned_to) || 
+                                 user?.id === task.created_by || 
+                                 profile?.is_admin || 
+                                 profile?.role === 'admin' || 
+                                 profile?.role === 'manager';
+
+    if (!isResponsibleOrAdmin) {
+      alert('🔒 Изменять статус этой задачи может только ответственный сотрудник!');
+      return;
+    }
+
     if (newStatus === 'stopped') {
-      const task = tasks.find(t => t.id === taskId);
       setStopTask(task);
     } else {
       changeStatus(taskId, newStatus);

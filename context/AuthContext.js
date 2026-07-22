@@ -94,6 +94,10 @@ export function AuthProvider({ children }) {
   };
 
   const adminCreateUser = async (username, password, name, avatar, color, role = 'employee') => {
+    if (!profile?.is_admin && profile?.role !== 'admin') {
+      return { error: { message: 'Отказано в доступе. Требуются права администратора.' } };
+    }
+
     const cleanUsername = username.toLowerCase().trim();
     const isAdmin = role === 'admin';
     
@@ -150,6 +154,9 @@ export function AuthProvider({ children }) {
   };
 
   const updateUserRole = async (targetUserId, newRole) => {
+    if (!profile?.is_admin && profile?.role !== 'admin') {
+      return { error: { message: 'Отказано в доступе. Требуются права администратора.' } };
+    }
     const isAdmin = newRole === 'admin';
     if (isMock) {
       const profiles = JSON.parse(localStorage.getItem('mock_profiles') || '[]');
@@ -209,6 +216,9 @@ export function AuthProvider({ children }) {
   };
 
   const adminDeleteUser = async (targetUserId) => {
+    if (!profile?.is_admin && profile?.role !== 'admin') {
+      return { error: { message: 'Отказано в доступе. Требуются права администратора.' } };
+    }
     if (!targetUserId) return { error: { message: 'ID пользователя не указан' } };
     if (profile && profile.id === targetUserId) {
       return { error: { message: 'Вы не можете удалить свой собственный аккаунт.' } };

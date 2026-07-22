@@ -173,6 +173,15 @@ export function useTasks(userId, profile) {
   const changeStatus = async (taskId, newStatus, stopReason = null) => {
     const task = tasks.find(t => t.id === taskId);
     if (!task) return;
+
+    const canChange = userId === (task.responsible_id || task.assigned_to) || 
+                      userId === task.created_by || 
+                      isManagerOrAdmin;
+
+    if (!canChange) {
+      console.warn('Unauthorized status change attempt.');
+      return;
+    }
     
     const updates = { 
       status: newStatus, 
