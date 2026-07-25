@@ -210,9 +210,17 @@ export function useTasks(userId, profile) {
         try {
           const respId = task.responsible_id || task.assigned_to;
           const responsibleName = await fetchProfileName(respId);
+          const creatorName = await fetchProfileName(task.created_by);
+          const assigneeIds = Array.isArray(task.assignees) && task.assignees.length > 0
+            ? task.assignees
+            : (task.assigned_to ? [task.assigned_to] : []);
+          const assigneeNames = await Promise.all(assigneeIds.map(id => fetchProfileName(id)));
+
           await sendTelegramNotification('TASK_COMPLETED', {
             task,
-            responsibleName
+            responsibleName,
+            creatorName,
+            assigneeNames
           });
         } catch (err) {
           console.error('Telegram completion notification error:', err);
