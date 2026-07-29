@@ -1,12 +1,16 @@
 'use client';
 
 import React from 'react';
-import { getDeadlineStatus, getPriorityLabel, normalizeTags, getTaskNumber } from '@/lib/utils';
+import { getDeadlineStatus, getPriorityLabel, normalizeTags, getTaskNumber, formatDuration } from '@/lib/utils';
 
 export default function TaskCard({ task, profiles = [], allTasks = [], onClick, draggable = true, onDragStart, onDragEnd, dragging }) {
   const creator = profiles.find(p => p.id === task.created_by);
   const assignee = profiles.find(p => p.id === task.assigned_to);
-  const deadlineStatus = getDeadlineStatus(task.deadline);
+  const isDone = task.status === 'done';
+  const deadlineStatus = !isDone ? getDeadlineStatus(task.deadline) : null;
+  const completionDuration = isDone && task.created_at && task.updated_at
+    ? formatDuration(new Date(task.updated_at) - new Date(task.created_at))
+    : null;
   const tagsList = normalizeTags(task.tags);
   const taskNum = getTaskNumber(task, allTasks);
 
@@ -56,6 +60,12 @@ export default function TaskCard({ task, profiles = [], allTasks = [], onClick, 
       {deadlineStatus && (
         <div className={`task-deadline ${deadlineStatus.class}`}>
           📅 {deadlineStatus.text}
+        </div>
+      )}
+
+      {completionDuration && (
+        <div className="task-deadline safe">
+          ✅ Выполнено за {completionDuration}
         </div>
       )}
       
