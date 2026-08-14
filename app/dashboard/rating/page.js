@@ -138,9 +138,8 @@ export default function RatingPage() {
                   </div>
 
                   <div style={{ textAlign: 'right', minWidth: '80px' }}>
-                    <div style={{ fontSize: '20px', fontWeight: 700, color: '#38bdf8', lineHeight: 1.1 }}>{row.score}</div>
-                    <div style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>очков</div>
-                    <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>{row.scoreOutOf10} / 10</div>
+                    <div style={{ fontSize: '22px', fontWeight: 700, color: '#38bdf8', lineHeight: 1.1 }}>{row.score}</div>
+                    <div style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>баллов</div>
                   </div>
                 </div>
               );
@@ -164,7 +163,6 @@ export default function RatingPage() {
           </div>
           <div style={{ marginTop: '8px' }}>
             Итог за месяц = сумма баллов по всем закрытым задачам. Задачи без выставленной сложности не приносят баллов.
-            Балл «из 10» показывает отставание от лидера месяца.
           </div>
         </div>
       </div>
