@@ -6,6 +6,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useTasks } from '@/hooks/useTasks';
 import { supabase } from '@/lib/supabase';
 import { calcMonthlyRating, MONTH_NAMES, RATING_CONFIG } from '@/lib/rating';
+import EmployeeRatingModal from '@/components/RatingModal/EmployeeRatingModal';
 
 const MEDALS = ['🥇', '🥈', '🥉'];
 
@@ -15,6 +16,7 @@ export default function RatingPage() {
   const router = useRouter();
 
   const [profiles, setProfiles] = useState([]);
+  const [selectedId, setSelectedId] = useState(null);
   const now = new Date();
   const [period, setPeriod] = useState({ year: now.getFullYear(), month: now.getMonth() });
 
@@ -56,6 +58,10 @@ export default function RatingPage() {
   };
 
   const isCurrentMonth = period.year === now.getFullYear() && period.month === now.getMonth();
+
+  // Derived from the freshly computed rating, so the open modal follows live task edits
+  // and month switches instead of holding a stale copy.
+  const selectedRow = rating.find(r => r.profile.id === selectedId) || null;
 
   if (!isAdmin) return null;
 
@@ -101,6 +107,8 @@ export default function RatingPage() {
               return (
                 <div
                   key={row.profile.id}
+                  onClick={() => setSelectedId(row.profile.id)}
+                  title="Открыть подробный разбор баллов"
                   style={{
                     display: 'flex',
                     alignItems: 'center',
@@ -109,7 +117,8 @@ export default function RatingPage() {
                     background: '#0d1117',
                     border: `1px solid ${medal ? 'rgba(245, 158, 11, 0.35)' : 'var(--border-color)'}`,
                     borderRadius: '10px',
-                    flexWrap: 'wrap'
+                    flexWrap: 'wrap',
+                    cursor: 'pointer'
                   }}
                 >
                   <span style={{ fontSize: '18px', minWidth: '28px', textAlign: 'center' }}>
@@ -140,6 +149,7 @@ export default function RatingPage() {
                   <div style={{ textAlign: 'right', minWidth: '80px' }}>
                     <div style={{ fontSize: '22px', fontWeight: 700, color: '#38bdf8', lineHeight: 1.1 }}>{row.score}</div>
                     <div style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>баллов</div>
+                    <div style={{ fontSize: '10px', color: '#38bdf8', marginTop: '2px' }}>подробнее →</div>
                   </div>
                 </div>
               );
@@ -166,6 +176,13 @@ export default function RatingPage() {
           </div>
         </div>
       </div>
+
+      <EmployeeRatingModal
+        isOpen={!!selectedRow}
+        row={selectedRow}
+        monthLabel={`${MONTH_NAMES[period.month]} ${period.year}`}
+        onClose={() => setSelectedId(null)}
+      />
     </div>
   );
 }
