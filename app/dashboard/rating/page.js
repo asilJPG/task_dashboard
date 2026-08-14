@@ -125,6 +125,9 @@ export default function RatingPage() {
                     <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '3px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
                       <span>✅ Закрыто: <strong style={{ color: '#34d399' }}>{row.closedCount}</strong> из {row.totalTasks} ({row.closedPercent}%)</span>
                       <span>⚡ Сложность: <strong style={{ color: '#f59e0b' }}>{row.difficultySum}</strong></span>
+                      <span>⏱ Сроки: <strong style={{ color: row.timeBonusSum > 0 ? '#34d399' : row.timeBonusSum < 0 ? '#f85149' : '#8d96a0' }}>
+                        {row.timeBonusSum > 0 ? `+${row.timeBonusSum}` : row.timeBonusSum}
+                      </strong></span>
                     </div>
                     <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
                       <span>🎯 В срок: <strong style={{ color: '#34d399' }}>{row.inTimeCount}</strong></span>
@@ -150,17 +153,18 @@ export default function RatingPage() {
         <h3>Как считается</h3>
         <div style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: '1.7' }}>
           <div>Задача учитывается в том месяце, в котором была <strong>закрыта</strong>. Рейтинг обнуляется каждый месяц.</div>
-          <div style={{ marginTop: '8px' }}>Очки за задачу = <strong>сложность × коэффициент срока</strong>:</div>
+          <div style={{ marginTop: '8px' }}>Баллы за задачу = <strong>сложность + балл за срок</strong>:</div>
           <div style={{ marginLeft: '12px' }}>
-            <div>🎯 Уложился в дедлайн — <strong style={{ color: '#34d399' }}>×{RATING_CONFIG.IN_TIME}</strong></div>
-            <div>⏳ Просрочка до {RATING_CONFIG.GRACE_DAYS} дней — <strong>×{RATING_CONFIG.GRACE}</strong> (без плюса и минуса)</div>
-            <div>🔴 Просрочка больше {RATING_CONFIG.GRACE_DAYS} дней — <strong style={{ color: '#f85149' }}>×{RATING_CONFIG.LATE}</strong></div>
+            <div>🎯 Уложился в дедлайн — <strong style={{ color: '#34d399' }}>+{RATING_CONFIG.IN_TIME_BONUS}</strong></div>
+            <div>⏳ Просрочка до {RATING_CONFIG.GRACE_DAYS} дней — <strong>{RATING_CONFIG.GRACE_BONUS}</strong> (без плюса и минуса)</div>
+            <div>🔴 Просрочка больше {RATING_CONFIG.GRACE_DAYS} дней — <strong style={{ color: '#f85149' }}>{RATING_CONFIG.LATE_PENALTY}</strong></div>
           </div>
           <div style={{ marginTop: '8px' }}>
-            Итог = сумма очков × доля закрытых задач. Закрыл всё — сохраняет 100% очков, закрыл половину — 75%.
+            Например: задача оценена на <strong>6</strong> и закрыта в срок → <strong>6 + 1 = 7 баллов</strong>.
           </div>
           <div style={{ marginTop: '8px' }}>
-            Задачи без выставленной сложности не приносят баллов. Балл «из 10» показывает отставание от лидера месяца.
+            Итог за месяц = сумма баллов по всем закрытым задачам. Задачи без выставленной сложности не приносят баллов.
+            Балл «из 10» показывает отставание от лидера месяца.
           </div>
         </div>
       </div>
