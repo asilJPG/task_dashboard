@@ -14,7 +14,7 @@ import { normalizeTags } from '@/lib/utils';
 
 export default function KanbanPage() {
   const { user, profile } = useAuth();
-  const { tasks, createTask, updateTask, changeStatus, deleteTask, addComment } = useTasks(user?.id, profile);
+  const { tasks, createTask, updateTask, changeStatus, deleteTask, addComment, setDifficulty } = useTasks(user?.id, profile);
   const searchParams = useSearchParams();
   const taskIdParam = searchParams.get('task');
   
@@ -191,6 +191,13 @@ export default function KanbanPage() {
     }
   };
 
+  const handleDifficultyChange = async (taskId, difficulty) => {
+    await setDifficulty(taskId, difficulty);
+    if (detailTask && detailTask.id === taskId) {
+      setDetailTask(prev => ({ ...prev, difficulty }));
+    }
+  };
+
   return (
     <div className="dashboard-container">
       <div className="board-toolbar" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
@@ -315,6 +322,7 @@ export default function KanbanPage() {
           onStatusChange={(status) => handleStatusChange(detailTask.id, status)}
           onProgressChange={(progress) => handleProgressChange(detailTask.id, progress)}
           onTogglePin={() => handleTogglePin(detailTask.id)}
+          onDifficultyChange={(difficulty) => handleDifficultyChange(detailTask.id, difficulty)}
           onClose={() => setDetailTask(null)}
           currentUserId={user?.id}
         />

@@ -191,6 +191,14 @@ export function useTasks(userId, profile) {
     if (task.status === 'stopped' && newStatus !== 'stopped') updates.stop_reason = null;
     if (newStatus === 'stopped' && stopReason) updates.stop_reason = stopReason;
 
+    // completed_at anchors the task to a month in the rating and must survive later edits,
+    // so it is stamped only on the transition into 'done' and cleared when the task reopens.
+    if (newStatus === 'done' && task.status !== 'done') {
+      updates.completed_at = new Date().toISOString();
+    } else if (newStatus !== 'done' && task.status === 'done') {
+      updates.completed_at = null;
+    }
+
     const { error } = await supabase.from('tb_tasks').update(updates).eq('id', taskId);
     if (error) {
       console.error('Error changing status:', error);
@@ -237,6 +245,20 @@ export function useTasks(userId, profile) {
     const task = tasks.find(t => t.id === taskId);
     if (!task) return;
     return await updateTask(taskId, { pinned: !task.pinned });
+  };
+
+  // Task difficulty (1-10) feeds the monthly rating and may only be set by managers/admins.
+  // It stays editable at any point, including on tasks that are already closed.
+  const setDifficulty = async (taskId, difficulty) => {
+    if (!isManagerOrAdmin) {
+      console.warn('Unauthorized difficulty change attempt.');
+      return { error: 'forbidden' };
+    }
+    const value = difficulty === null ? null : Number(difficulty);
+    if (value !== null && (isNaN(value) || value < 1 || value > 10)) {
+      return { error: 'invalid difficulty' };
+    }
+    return await updateTask(taskId, { difficulty: value });
   };
 
   const addComment = async (taskId, text) => {
@@ -287,5 +309,5 @@ export function useTasks(userId, profile) {
     return { data, error };
   };
 
-  return { tasks, loading, createTask, updateTask, deleteTask, changeStatus, updateProgress, togglePin, addComment };
+  return { tasks, loading, createTask, updateTask, deleteTask, changeStatus, updateProgress, togglePin, setDifficulty, addComment };
 }

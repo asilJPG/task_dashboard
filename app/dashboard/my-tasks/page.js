@@ -9,7 +9,7 @@ import { supabase } from '@/lib/supabase';
 
 export default function MyTasksPage() {
   const { user, profile } = useAuth();
-  const { tasks, updateTask, changeStatus, deleteTask, addComment } = useTasks(user?.id, profile);
+  const { tasks, updateTask, changeStatus, deleteTask, addComment, setDifficulty } = useTasks(user?.id, profile);
   
   const [activeFilter, setActiveFilter] = useState('all');
   const [profiles, setProfiles] = useState([]);
@@ -140,6 +140,13 @@ export default function MyTasksPage() {
     }
   };
 
+  const handleDifficultyChange = async (taskId, difficulty) => {
+    await setDifficulty(taskId, difficulty);
+    if (detailTask && detailTask.id === taskId) {
+      setDetailTask(prev => ({ ...prev, difficulty }));
+    }
+  };
+
   return (
     <div className="dashboard-view">
       <h2>📥 Мои задачи</h2>
@@ -231,6 +238,7 @@ export default function MyTasksPage() {
           onStatusChange={(status) => changeStatus(detailTask.id, status)}
           onProgressChange={(progress) => handleProgressChange(detailTask.id, progress)}
           onTogglePin={() => handleTogglePin(detailTask.id)}
+          onDifficultyChange={(difficulty) => handleDifficultyChange(detailTask.id, difficulty)}
           onClose={() => setDetailTask(null)}
           currentUserId={user?.id}
         />

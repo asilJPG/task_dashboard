@@ -3,9 +3,9 @@
 import React, { useState, useEffect } from 'react';
 import { formatRelativeTime, getPriorityLabel, getStatusLabel } from '@/lib/utils';
 
-export default function TaskDetailModal({ 
-  isOpen, onClose, task, profiles = [], comments = [], history = [], 
-  onEdit, onDelete, onComment, onStatusChange, onProgressChange, onTogglePin,
+export default function TaskDetailModal({
+  isOpen, onClose, task, profiles = [], comments = [], history = [],
+  onEdit, onDelete, onComment, onStatusChange, onProgressChange, onTogglePin, onDifficultyChange,
   currentUserId
 }) {
   const [commentText, setCommentText] = useState('');
@@ -30,6 +30,9 @@ export default function TaskDetailModal({
   const currentUserProfile = profiles.find(p => p.id === currentUserId);
   const canEditOrDelete = task.created_by === currentUserId || currentUserProfile?.is_admin || currentUserProfile?.role === 'admin';
   const canChangeStatusOrProgress = currentUserId === (task.responsible_id || task.assigned_to) || currentUserId === task.created_by || currentUserProfile?.is_admin || currentUserProfile?.role === 'admin' || currentUserProfile?.role === 'manager';
+  // Difficulty drives the monthly rating, so only managers/admins may set it — at any time,
+  // including on tasks that are already closed.
+  const canSetDifficulty = currentUserProfile?.is_admin || currentUserProfile?.role === 'admin' || currentUserProfile?.role === 'manager';
 
   const handleCommentSubmit = () => {
     if (commentText.trim()) {
@@ -155,6 +158,47 @@ export default function TaskDetailModal({
               ))}
             </div>
           </div>
+
+          {canSetDifficulty && onDifficultyChange ? (
+            <div className="detail-row" style={{ marginBottom: '20px', flexWrap: 'wrap' }}>
+              <span className="detail-label">
+                Сложность {task.difficulty ? `(${task.difficulty}/10)` : '(не оценена)'}:
+              </span>
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '4px', flexWrap: 'wrap' }}>
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(val => (
+                  <button
+                    type="button"
+                    key={val}
+                    className={`btn btn-sm ${task.difficulty === val ? 'btn-primary' : 'btn-secondary'}`}
+                    style={{ padding: '4px 10px', fontSize: '12px' }}
+                    onClick={() => onDifficultyChange(val)}
+                  >
+                    {val}
+                  </button>
+                ))}
+                {task.difficulty > 0 && (
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-secondary"
+                    style={{ padding: '4px 10px', fontSize: '11px', marginLeft: '4px' }}
+                    onClick={() => onDifficultyChange(null)}
+                  >
+                    Сбросить
+                  </button>
+                )}
+              </div>
+              <div style={{ width: '100%', fontSize: '11px', color: 'var(--text-secondary)', marginTop: '6px' }}>
+                ⚡ Влияет на рейтинг сотрудника. Без оценки задача не приносит баллов.
+              </div>
+            </div>
+          ) : (
+            <div className="detail-row" style={{ marginBottom: '20px' }}>
+              <span className="detail-label">Сложность:</span>
+              <span className="detail-value">
+                {task.difficulty > 0 ? `⚡ ${task.difficulty} из 10` : 'Не оценена руководителем'}
+              </span>
+            </div>
+          )}
 
           {task.tags?.length > 0 && (
             <div className="detail-row" style={{ marginBottom: '20px' }}>

@@ -8,8 +8,10 @@ export default function TaskCard({ task, profiles = [], allTasks = [], onClick, 
   const assignee = profiles.find(p => p.id === task.assigned_to);
   const isDone = task.status === 'done';
   const deadlineStatus = !isDone ? getDeadlineStatus(task.deadline) : null;
-  const completionDuration = isDone && task.created_at && task.updated_at
-    ? formatDuration(new Date(task.updated_at) - new Date(task.created_at))
+  // completed_at, not updated_at: editing a closed task (e.g. a manager setting its difficulty)
+  // must not change how long it took to finish.
+  const completionDuration = isDone && task.created_at && task.completed_at
+    ? formatDuration(new Date(task.completed_at) - new Date(task.created_at))
     : null;
   const tagsList = normalizeTags(task.tags);
   const taskNum = getTaskNumber(task, allTasks);
@@ -25,6 +27,14 @@ export default function TaskCard({ task, profiles = [], allTasks = [], onClick, 
       <div className="task-card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
         <span className={`task-priority priority-${task.priority}`}>{getPriorityLabel(task.priority)}</span>
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          {task.difficulty > 0 && (
+            <span
+              title={`Сложность: ${task.difficulty} из 10`}
+              style={{ fontSize: '10px', padding: '2px 7px', background: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b', border: '1px solid rgba(245, 158, 11, 0.3)', borderRadius: '10px', fontWeight: 600 }}
+            >
+              ⚡ {task.difficulty}
+            </span>
+          )}
           {tagsList.length > 0 && (
             <span className="task-tag" style={{ margin: 0, fontSize: '10px', padding: '2px 7px', background: 'rgba(124, 58, 237, 0.2)', color: '#a78bfa', border: '1px solid rgba(124, 58, 237, 0.3)', borderRadius: '10px' }}>
               🏷️ {tagsList[0]} {tagsList.length > 1 ? `+${tagsList.length - 1}` : ''}

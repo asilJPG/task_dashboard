@@ -44,6 +44,8 @@ CREATE TABLE IF NOT EXISTS tb_tasks (
   deadline DATE,
   tags TEXT[] DEFAULT '{}',
   pinned BOOLEAN DEFAULT false,
+  difficulty INT CHECK (difficulty BETWEEN 1 AND 10),
+  completed_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ DEFAULT now(),
   updated_at TIMESTAMPTZ DEFAULT now()
 );
@@ -52,6 +54,15 @@ CREATE TABLE IF NOT EXISTS tb_tasks (
 ALTER TABLE tb_tasks ADD COLUMN IF NOT EXISTS assignees TEXT[] DEFAULT '{}';
 ALTER TABLE tb_tasks ADD COLUMN IF NOT EXISTS responsible_id UUID;
 ALTER TABLE tb_tasks ADD COLUMN IF NOT EXISTS task_number SERIAL;
+
+-- Employee rating: difficulty is set by managers only, NULL = not yet rated (task scores 0 points).
+ALTER TABLE tb_tasks ADD COLUMN IF NOT EXISTS difficulty INT CHECK (difficulty BETWEEN 1 AND 10);
+-- completed_at is written once when a task enters 'done'. The rating buckets tasks by this date,
+-- so it must not shift when a manager edits difficulty later (updated_at does shift).
+ALTER TABLE tb_tasks ADD COLUMN IF NOT EXISTS completed_at TIMESTAMPTZ;
+
+-- One-time backfill so already-closed tasks keep their place in past months.
+UPDATE tb_tasks SET completed_at = updated_at WHERE status = 'done' AND completed_at IS NULL;
 
 -- 3. Comments table
 CREATE TABLE IF NOT EXISTS tb_comments (
