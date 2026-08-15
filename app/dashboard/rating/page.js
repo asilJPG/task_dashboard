@@ -10,6 +10,36 @@ import EmployeeRatingModal from '@/components/RatingModal/EmployeeRatingModal';
 
 const MEDALS = ['🥇', '🥈', '🥉'];
 
+// One leaderboard per criterion, plus the combined one. Every metric is already produced by
+// calcMonthlyRating — a tab only decides what to sort by and which number to show large.
+const TABS = [
+  {
+    id: 'total', icon: '🏆', label: 'Общий', color: '#38bdf8',
+    unit: 'баллов', value: r => r.score,
+    hint: 'Сумма всех баллов за месяц: сложность + сроки + качество.'
+  },
+  {
+    id: 'count', icon: '📋', label: 'Количество', color: '#34d399',
+    unit: 'задач', value: r => r.closedCount,
+    hint: 'Кто закрыл больше задач, без учёта их сложности.'
+  },
+  {
+    id: 'difficulty', icon: '⚡', label: 'Сложность', color: '#f59e0b',
+    unit: 'сложности', value: r => r.difficultySum,
+    hint: 'Сумма сложности принятых задач — кто брал самое трудное.'
+  },
+  {
+    id: 'deadline', icon: '🎯', label: 'Сроки', color: '#a78bfa',
+    unit: 'баллов за сроки', value: r => r.timeBonusSum, signed: true,
+    hint: 'Баланс по срокам: +1 за сдачу в дедлайн, −1 за просрочку больше 10 дней.'
+  },
+  {
+    id: 'quality', icon: '⭐', label: 'Качество', color: '#38bdf8',
+    unit: 'баллов за качество', value: r => r.qualitySum,
+    hint: 'Сумма оценок качества, выставленных руководителем при приёмке.'
+  }
+];
+
 export default function RatingPage() {
   const { user, profile } = useAuth();
   const { tasks, loading } = useTasks(user?.id, profile);
@@ -17,6 +47,7 @@ export default function RatingPage() {
 
   const [profiles, setProfiles] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
+  const [activeTab, setActiveTab] = useState('total');
   const now = new Date();
   const [period, setPeriod] = useState({ year: now.getFullYear(), month: now.getMonth() });
 
@@ -63,6 +94,12 @@ export default function RatingPage() {
   // and month switches instead of holding a stale copy.
   const selectedRow = rating.find(r => r.profile.id === selectedId) || null;
 
+  const tab = TABS.find(t => t.id === activeTab) || TABS[0];
+  // Ranked by the active criterion; the overall score breaks ties so the order stays stable.
+  const rankedRows = [...rating]
+    .sort((a, b) => tab.value(b) - tab.value(a) || b.score - a.score)
+    .map((row, index) => ({ ...row, tabRank: index + 1, tabValue: tab.value(row) }));
+
   if (!isAdmin) return null;
 
   return (
@@ -93,7 +130,24 @@ export default function RatingPage() {
         </div>
       )}
 
+      <div className="filter-bar" style={{ marginBottom: '16px' }}>
+        {TABS.map(t => (
+          <button
+            key={t.id}
+            type="button"
+            className={`filter-chip ${activeTab === t.id ? 'active' : ''}`}
+            onClick={() => setActiveTab(t.id)}
+          >
+            {t.icon} {t.label}
+          </button>
+        ))}
+      </div>
+
       <div className="analytics-card">
+        <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginBottom: '12px' }}>
+          {tab.hint}
+        </div>
+
         {loading && <div style={{ color: 'var(--text-secondary)', fontSize: 13, textAlign: 'center', padding: '20px 0' }}>Загрузка...</div>}
 
         {!loading && rating.length === 0 && (
@@ -102,8 +156,8 @@ export default function RatingPage() {
 
         {!loading && rating.length > 0 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            {rating.map(row => {
-              const medal = row.score > 0 && row.rank <= 3 ? MEDALS[row.rank - 1] : null;
+            {rankedRows.map(row => {
+              const medal = row.tabValue > 0 && row.tabRank <= 3 ? MEDALS[row.tabRank - 1] : null;
               return (
                 <div
                   key={row.profile.id}
@@ -122,7 +176,7 @@ export default function RatingPage() {
                   }}
                 >
                   <span style={{ fontSize: '18px', minWidth: '28px', textAlign: 'center' }}>
-                    {medal || <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{row.rank}</span>}
+                    {medal || <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{row.tabRank}</span>}
                   </span>
 
                   <div className="avatar-circle" style={{ backgroundColor: row.profile.color || 'var(--accent)', width: '34px', height: '34px', fontSize: '17px', flexShrink: 0 }}>
@@ -146,9 +200,16 @@ export default function RatingPage() {
                     </div>
                   </div>
 
-                  <div style={{ textAlign: 'right', minWidth: '80px' }}>
-                    <div style={{ fontSize: '22px', fontWeight: 700, color: '#38bdf8', lineHeight: 1.1 }}>{row.score}</div>
-                    <div style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>баллов</div>
+                  <div style={{ textAlign: 'right', minWidth: '90px' }}>
+                    <div style={{ fontSize: '22px', fontWeight: 700, color: tab.color, lineHeight: 1.1 }}>
+                      {tab.signed && row.tabValue > 0 ? `+${row.tabValue}` : row.tabValue}
+                    </div>
+                    <div style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>{tab.unit}</div>
+                    {tab.id !== 'total' && (
+                      <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                        всего: {row.score} балл.
+                      </div>
+                    )}
                     <div style={{ fontSize: '10px', color: '#38bdf8', marginTop: '2px' }}>подробнее →</div>
                   </div>
                 </div>
