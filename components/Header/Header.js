@@ -183,6 +183,8 @@ export default function Header() {
   const pathname = usePathname();
   const { profile } = useAuth();
   const userRole = profile?.role || (profile?.is_admin ? 'admin' : 'employee');
+  // Managers award bonuses from the rating, so they see it too — unlike the admin panel.
+  const canViewRating = userRole === 'admin' || userRole === 'manager' || profile?.is_admin;
 
   return (
     <>
@@ -194,11 +196,11 @@ export default function Header() {
             <Link href="/dashboard/my-tasks" className={`nav-tab ${pathname === '/dashboard/my-tasks' ? 'active' : ''}`}>📥 Мои задачи</Link>
             <Link href="/dashboard/assigned" className={`nav-tab ${pathname === '/dashboard/assigned' ? 'active' : ''}`}>📤 Я назначил</Link>
             <Link href="/dashboard/analytics" className={`nav-tab ${pathname === '/dashboard/analytics' ? 'active' : ''}`}>📊 Аналитика</Link>
+            {canViewRating && (
+              <Link href="/dashboard/rating" className={`nav-tab ${pathname === '/dashboard/rating' ? 'active' : ''}`}>🏆 Рейтинг</Link>
+            )}
             {(userRole === 'admin' || profile?.is_admin) && (
-              <>
-                <Link href="/dashboard/rating" className={`nav-tab ${pathname === '/dashboard/rating' ? 'active' : ''}`}>🏆 Рейтинг</Link>
-                <Link href="/dashboard/admin" className={`nav-tab ${pathname === '/dashboard/admin' ? 'active' : ''}`}>⚙️ Админка</Link>
-              </>
+              <Link href="/dashboard/admin" className={`nav-tab ${pathname === '/dashboard/admin' ? 'active' : ''}`}>⚙️ Админка</Link>
             )}
           </nav>
         </div>
@@ -227,17 +229,17 @@ export default function Header() {
           <span className="mobile-nav-icon">📊</span>
           <span className="mobile-nav-label">Аналитика</span>
         </Link>
+        {canViewRating && (
+          <Link href="/dashboard/rating" className={`mobile-nav-item ${pathname === '/dashboard/rating' ? 'active' : ''}`}>
+            <span className="mobile-nav-icon">🏆</span>
+            <span className="mobile-nav-label">Рейтинг</span>
+          </Link>
+        )}
         {(userRole === 'admin' || profile?.is_admin) && (
-          <>
-            <Link href="/dashboard/rating" className={`mobile-nav-item ${pathname === '/dashboard/rating' ? 'active' : ''}`}>
-              <span className="mobile-nav-icon">🏆</span>
-              <span className="mobile-nav-label">Рейтинг</span>
-            </Link>
-            <Link href="/dashboard/admin" className={`mobile-nav-item ${pathname === '/dashboard/admin' ? 'active' : ''}`}>
-              <span className="mobile-nav-icon">⚙️</span>
-              <span className="mobile-nav-label">Админ</span>
-            </Link>
-          </>
+          <Link href="/dashboard/admin" className={`mobile-nav-item ${pathname === '/dashboard/admin' ? 'active' : ''}`}>
+            <span className="mobile-nav-icon">⚙️</span>
+            <span className="mobile-nav-label">Админ</span>
+          </Link>
         )}
       </nav>
     </>

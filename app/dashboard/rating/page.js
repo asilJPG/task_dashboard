@@ -10,6 +10,9 @@ import EmployeeRatingModal from '@/components/RatingModal/EmployeeRatingModal';
 
 const MEDALS = ['🥇', '🥈', '🥉'];
 
+// The board shows a top N — longer lists are noise when the point is who to reward.
+const TOP_LIMIT = 10;
+
 // One leaderboard per criterion, plus the combined one. Every metric is already produced by
 // calcMonthlyRating — a tab only decides what to sort by and which number to show large.
 const TABS = [
@@ -51,11 +54,12 @@ export default function RatingPage() {
   const now = new Date();
   const [period, setPeriod] = useState({ year: now.getFullYear(), month: now.getMonth() });
 
-  const isAdmin = profile?.is_admin || profile?.role === 'admin';
+  // Managers need the rating to award bonuses; regular employees never see it.
+  const canViewRating = profile?.is_admin || profile?.role === 'admin' || profile?.role === 'manager';
 
   useEffect(() => {
-    if (profile && !isAdmin) router.push('/dashboard');
-  }, [profile, isAdmin, router]);
+    if (profile && !canViewRating) router.push('/dashboard');
+  }, [profile, canViewRating, router]);
 
   useEffect(() => {
     const fetchProfiles = async () => {
@@ -98,14 +102,17 @@ export default function RatingPage() {
   // Ranked by the active criterion; the overall score breaks ties so the order stays stable.
   const rankedRows = [...rating]
     .sort((a, b) => tab.value(b) - tab.value(a) || b.score - a.score)
-    .map((row, index) => ({ ...row, tabRank: index + 1, tabValue: tab.value(row) }));
+    .map((row, index) => ({ ...row, tabRank: index + 1, tabValue: tab.value(row) }))
+    .slice(0, TOP_LIMIT);
 
-  if (!isAdmin) return null;
+  const hiddenCount = rating.length - rankedRows.length;
+
+  if (!canViewRating) return null;
 
   return (
     <div className="analytics-view">
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', marginBottom: '20px' }}>
-        <h2 style={{ margin: 0 }}>🏆 Рейтинг сотрудников</h2>
+        <h2 style={{ margin: 0 }}>🏆 Топ-{TOP_LIMIT} сотрудников</h2>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <button type="button" className="btn btn-sm btn-secondary" onClick={() => shiftMonth(-1)}>← Назад</button>
@@ -215,6 +222,12 @@ export default function RatingPage() {
                 </div>
               );
             })}
+
+            {hiddenCount > 0 && (
+              <div style={{ fontSize: '11px', color: 'var(--text-secondary)', textAlign: 'center', paddingTop: '4px' }}>
+                Показаны первые {TOP_LIMIT} — ещё {hiddenCount} за пределами топа.
+              </div>
+            )}
           </div>
         )}
       </div>
