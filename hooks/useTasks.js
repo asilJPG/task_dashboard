@@ -100,11 +100,15 @@ export function useTasks(userId, profile) {
     const assignees = Array.isArray(data.assignees) ? data.assignees : (data.assigned_to ? [data.assigned_to] : []);
     const responsible_id = data.responsible_id || data.assigned_to || userId;
 
+    // A manager can log a task on behalf of whoever requested it; otherwise the author is the
+    // person creating it.
+    const created_by = (isManagerOrAdmin && data.created_by) ? data.created_by : userId;
+
     const { data: newTask, error } = await supabase.from('tb_tasks').insert([{
       ...data,
       assignees,
       responsible_id,
-      created_by: userId,
+      created_by,
       created_at: new Date().toISOString()
     }]).select().single();
 

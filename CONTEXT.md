@@ -33,7 +33,7 @@
 - `status` (`new` | `in_progress` | `stopped` | `review` | `done`)
 - `progress` (INTEGER: 0, 25, 50, 75, 100)
 - `priority` (`low` | `medium` | `high` | `critical`)
-- `created_by` (UUID) — Создатель
+- `created_by` (UUID) — Постановщик задачи. По умолчанию тот, кто её создал, но `manager`/`admin` может выбрать другого человека в форме («📌 Кто ставит задачу»)
 - `assigned_to` (UUID) — Первичный исполнитель
 - `assignees` (TEXT[]) — Массив всех исполнителей
 - `responsible_id` (UUID) — Ответственное лицо за прогресс и статус

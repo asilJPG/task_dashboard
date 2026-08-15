@@ -3,12 +3,13 @@
 import React, { useState, useEffect } from 'react';
 import { normalizeTags } from '@/lib/utils';
 
-export default function TaskFormModal({ isOpen, onClose, onSave, task, profiles = [], currentUser }) {
+export default function TaskFormModal({ isOpen, onClose, onSave, task, profiles = [], currentUser, currentProfile }) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [assignedTo, setAssignedTo] = useState('');
   const [assignees, setAssignees] = useState([]);
   const [responsibleId, setResponsibleId] = useState('');
+  const [createdBy, setCreatedBy] = useState('');
   const [priority, setPriority] = useState('medium');
   const [deadline, setDeadline] = useState('');
   const [progress, setProgress] = useState(0);
@@ -29,6 +30,7 @@ export default function TaskFormModal({ isOpen, onClose, onSave, task, profiles 
       setDeadline(task.deadline || '');
       setProgress(task.progress || 0);
       setTags(normalizeTags(task.tags));
+      setCreatedBy(task.created_by || '');
     } else {
       setTitle('');
       setDescription('');
@@ -39,10 +41,15 @@ export default function TaskFormModal({ isOpen, onClose, onSave, task, profiles 
       setDeadline('');
       setProgress(0);
       setTags([]);
+      setCreatedBy(currentUser?.id || '');
     }
   }, [task, isOpen, currentUser]);
 
   if (!isOpen) return null;
+
+  // A task can be logged on behalf of whoever actually requested it — managers only, so an
+  // employee cannot attribute their own task to the boss.
+  const canPickAuthor = currentProfile?.is_admin || currentProfile?.role === 'admin' || currentProfile?.role === 'manager';
 
   const handleAssigneeToggle = (profileId) => {
     setAssignees(prev => {
@@ -102,6 +109,10 @@ export default function TaskFormModal({ isOpen, onClose, onSave, task, profiles 
       progress,
       tags: finalTags
     };
+    // Only managers may attribute a task to someone else; for everyone else the author stands.
+    if (canPickAuthor && createdBy) {
+      payload.created_by = createdBy;
+    }
     if (task?.id) {
       payload.id = task.id;
     }
@@ -136,6 +147,26 @@ export default function TaskFormModal({ isOpen, onClose, onSave, task, profiles 
                 onChange={(e) => setDescription(e.target.value)} 
               />
             </div>
+
+            {canPickAuthor && (
+              <div className="form-group">
+                <label className="form-label">📌 Кто ставит задачу</label>
+                <select
+                  className="form-select"
+                  value={createdBy}
+                  onChange={(e) => setCreatedBy(e.target.value)}
+                >
+                  {profiles.map(p => (
+                    <option key={p.id} value={p.id}>
+                      {p.name} {p.id === currentUser?.id ? '(Вы)' : ''}
+                    </option>
+                  ))}
+                </select>
+                <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                  Задача будет числиться поручением от этого человека.
+                </div>
+              </div>
+            )}
 
             <div className="form-group">
               <label className="form-label">👨‍💻 Исполнители (выберите без ограничений) *</label>
