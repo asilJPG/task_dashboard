@@ -64,6 +64,26 @@ ALTER TABLE tb_tasks ADD COLUMN IF NOT EXISTS completed_at TIMESTAMPTZ;
 -- One-time backfill so already-closed tasks keep their place in past months.
 UPDATE tb_tasks SET completed_at = updated_at WHERE status = 'done' AND completed_at IS NULL;
 
+-- Review workflow: the assignee submits finished work, a manager accepts or sends it back.
+-- 'review' sits between 'in_progress' and 'done'.
+ALTER TABLE tb_tasks DROP CONSTRAINT IF EXISTS tb_tasks_status_check;
+ALTER TABLE tb_tasks ADD CONSTRAINT tb_tasks_status_check
+  CHECK (status IN ('new','in_progress','stopped','review','done'));
+
+-- Stamped when the assignee submits for review. The rating judges the deadline by THIS date,
+-- so a manager who reviews slowly cannot cost the assignee their on-time bonus.
+ALTER TABLE tb_tasks ADD COLUMN IF NOT EXISTS submitted_at TIMESTAMPTZ;
+
+-- Quality of the finished work, 1-5, set by a manager on acceptance.
+ALTER TABLE tb_tasks ADD COLUMN IF NOT EXISTS quality INT CHECK (quality BETWEEN 1 AND 5);
+
+-- Per-assignee share of the task's points for team work: {"<user_id>": 60, "<user_id>": 40}.
+-- Empty/NULL means split evenly between assignees.
+ALTER TABLE tb_tasks ADD COLUMN IF NOT EXISTS assignee_shares JSONB;
+
+-- Existing closed tasks were submitted and accepted at once.
+UPDATE tb_tasks SET submitted_at = completed_at WHERE status = 'done' AND submitted_at IS NULL;
+
 -- 3. Comments table
 CREATE TABLE IF NOT EXISTS tb_comments (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

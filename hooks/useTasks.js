@@ -174,27 +174,44 @@ export function useTasks(userId, profile) {
     const task = tasks.find(t => t.id === taskId);
     if (!task) return;
 
-    const canChange = userId === (task.responsible_id || task.assigned_to) || 
-                      userId === task.created_by || 
+    const canChange = userId === (task.responsible_id || task.assigned_to) ||
+                      userId === task.created_by ||
                       isManagerOrAdmin;
 
     if (!canChange) {
       console.warn('Unauthorized status change attempt.');
       return;
     }
-    
-    const updates = { 
-      status: newStatus, 
-      updated_at: new Date().toISOString() 
+
+    // Accepting submitted work is the manager's call — the assignee submits for review instead.
+    if (newStatus === 'done' && !isManagerOrAdmin) {
+      console.warn('Only managers can accept a task.');
+      return { error: 'forbidden' };
+    }
+
+    const updates = {
+      status: newStatus,
+      updated_at: new Date().toISOString()
     };
     if (newStatus === 'done') updates.progress = 100;
     if (task.status === 'stopped' && newStatus !== 'stopped') updates.stop_reason = null;
     if (newStatus === 'stopped' && stopReason) updates.stop_reason = stopReason;
 
+    // submitted_at is what the rating judges the deadline by, so a slow review never costs the
+    // assignee their on-time bonus. Stamped when work is handed in and kept through acceptance.
+    if (newStatus === 'review' && task.status !== 'review') {
+      updates.submitted_at = new Date().toISOString();
+    } else if (newStatus === 'in_progress' || newStatus === 'new' || newStatus === 'stopped') {
+      // Sent back for rework — the next submission starts the clock again.
+      updates.submitted_at = null;
+    }
+
     // completed_at anchors the task to a month in the rating and must survive later edits,
     // so it is stamped only on the transition into 'done' and cleared when the task reopens.
     if (newStatus === 'done' && task.status !== 'done') {
       updates.completed_at = new Date().toISOString();
+      // Accepted straight from work without a review step — treat acceptance as the hand-in.
+      if (!task.submitted_at) updates.submitted_at = updates.completed_at;
     } else if (newStatus !== 'done' && task.status === 'done') {
       updates.completed_at = null;
     }
@@ -211,6 +228,25 @@ export function useTasks(userId, profile) {
       }]);
       if (task.created_by !== userId) {
         await sendNotification(task.created_by, 'status_change', taskId, `Статус задачи изменен на ${newStatus}`);
+      }
+
+      // Work handed in for review — every manager needs to know there is something to accept.
+      if (newStatus === 'review' && task.status !== 'review') {
+        try {
+          const { data: managers } = await supabase
+            .from('tb_profiles')
+            .select('id')
+            .in('role', ['manager', 'admin']);
+
+          await Promise.all((managers || []).map(m =>
+            sendNotification(m.id, 'review_requested', taskId, 'Задача отправлена на рассмотрение')
+          ));
+
+          const submitterName = profile?.name || await fetchProfileName(userId);
+          await sendTelegramNotification('TASK_SUBMITTED', { task, authorName: submitterName });
+        } catch (err) {
+          console.error('Review notification error:', err);
+        }
       }
 
       // If status changed to DONE, send Telegram notification with duration
@@ -261,6 +297,29 @@ export function useTasks(userId, profile) {
     return await updateTask(taskId, { difficulty: value });
   };
 
+  // Quality of the delivered work (1-5), judged by a manager when accepting the task.
+  const setQuality = async (taskId, quality) => {
+    if (!isManagerOrAdmin) {
+      console.warn('Unauthorized quality change attempt.');
+      return { error: 'forbidden' };
+    }
+    const value = quality === null ? null : Number(quality);
+    if (value !== null && (isNaN(value) || value < 1 || value > 5)) {
+      return { error: 'invalid quality' };
+    }
+    return await updateTask(taskId, { quality: value });
+  };
+
+  // How a team task's points are split, as { userId: percent }. Managers only.
+  // Passing null clears the split, which makes the rating divide points evenly.
+  const setAssigneeShares = async (taskId, shares) => {
+    if (!isManagerOrAdmin) {
+      console.warn('Unauthorized shares change attempt.');
+      return { error: 'forbidden' };
+    }
+    return await updateTask(taskId, { assignee_shares: shares });
+  };
+
   const addComment = async (taskId, text) => {
     const { data, error } = await supabase.from('tb_comments').insert([{
       task_id: taskId,
@@ -309,5 +368,5 @@ export function useTasks(userId, profile) {
     return { data, error };
   };
 
-  return { tasks, loading, createTask, updateTask, deleteTask, changeStatus, updateProgress, togglePin, setDifficulty, addComment };
+  return { tasks, loading, createTask, updateTask, deleteTask, changeStatus, updateProgress, togglePin, setDifficulty, setQuality, setAssigneeShares, addComment };
 }

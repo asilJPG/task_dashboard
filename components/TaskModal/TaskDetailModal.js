@@ -5,7 +5,8 @@ import { formatRelativeTime, getPriorityLabel, getStatusLabel } from '@/lib/util
 
 export default function TaskDetailModal({
   isOpen, onClose, task, profiles = [], comments = [], history = [],
-  onEdit, onDelete, onComment, onStatusChange, onProgressChange, onTogglePin, onDifficultyChange,
+  onEdit, onDelete, onComment, onStatusChange, onProgressChange, onTogglePin,
+  onDifficultyChange, onQualityChange, onSharesChange,
   currentUserId
 }) {
   const [commentText, setCommentText] = useState('');
@@ -33,6 +34,23 @@ export default function TaskDetailModal({
   // Difficulty drives the monthly rating, so only managers/admins may set it — at any time,
   // including on tasks that are already closed.
   const canSetDifficulty = currentUserProfile?.is_admin || currentUserProfile?.role === 'admin' || currentUserProfile?.role === 'manager';
+  // Only a manager closes a task: the assignee hands it in for review instead.
+  const canAcceptTask = canSetDifficulty;
+
+  // Shown percentages: the manager's split when set, an even division otherwise.
+  const sharePercents = {};
+  if (task.assignee_shares && typeof task.assignee_shares === 'object') {
+    assigneesList.forEach(a => { sharePercents[a.id] = Number(task.assignee_shares[a.id]) || 0; });
+  } else {
+    const even = assigneesList.length > 0 ? Math.round(100 / assigneesList.length) : 0;
+    assigneesList.forEach(a => { sharePercents[a.id] = even; });
+  }
+  const sharesTotal = Object.values(sharePercents).reduce((sum, v) => sum + v, 0);
+
+  const handleShareChange = (userId, rawValue) => {
+    const next = { ...sharePercents, [userId]: Math.max(0, Math.min(100, Number(rawValue) || 0)) };
+    onSharesChange(next);
+  };
 
   const handleCommentSubmit = () => {
     if (commentText.trim()) {
@@ -200,6 +218,47 @@ export default function TaskDetailModal({
             </div>
           )}
 
+          {/* Team split: how the task's points are divided between assignees */}
+          {assigneesList.length > 1 && (
+            <div className="detail-row" style={{ marginBottom: '20px', flexWrap: 'wrap' }}>
+              <span className="detail-label">Вклад в команде:</span>
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px', minWidth: '220px' }}>
+                {assigneesList.map(a => {
+                  const percent = sharePercents[a.id];
+                  return (
+                    <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span className="avatar-circle" style={{ background: a.color, width: '18px', height: '18px', fontSize: '10px', flexShrink: 0 }}>
+                        {a.avatar || '👤'}
+                      </span>
+                      <span style={{ fontSize: '12px', flex: 1, minWidth: '70px' }}>{a.name}</span>
+                      {canSetDifficulty && onSharesChange ? (
+                        <>
+                          <input
+                            type="number"
+                            min="0"
+                            max="100"
+                            className="form-input"
+                            style={{ width: '70px', padding: '4px 8px', fontSize: '12px' }}
+                            value={percent}
+                            onChange={(e) => handleShareChange(a.id, e.target.value)}
+                          />
+                          <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>%</span>
+                        </>
+                      ) : (
+                        <span style={{ fontSize: '12px', fontWeight: 600, color: '#38bdf8' }}>{percent}%</span>
+                      )}
+                    </div>
+                  );
+                })}
+                <div style={{ fontSize: '11px', color: sharesTotal === 100 ? 'var(--text-secondary)' : '#db6d28' }}>
+                  {task.assignee_shares
+                    ? `Сумма: ${sharesTotal}%${sharesTotal === 100 ? '' : ' — доли пересчитываются пропорционально'}`
+                    : 'Проценты не заданы — баллы делятся поровну.'}
+                </div>
+              </div>
+            </div>
+          )}
+
           {task.tags?.length > 0 && (
             <div className="detail-row" style={{ marginBottom: '20px' }}>
               <span className="detail-label">Теги:</span>
@@ -234,24 +293,99 @@ export default function TaskDetailModal({
               >
                 🔄 В работу
               </button>
-              <button 
+              <button
                 type="button"
-                className={`btn btn-sm ${task.status === 'stopped' ? 'btn-primary' : 'btn-secondary'}`} 
+                className={`btn btn-sm ${task.status === 'stopped' ? 'btn-primary' : 'btn-secondary'}`}
                 onClick={() => onStatusChange('stopped')}
                 disabled={!canChangeStatusOrProgress}
               >
                 🛑 На стоп
               </button>
-              <button 
+              <button
                 type="button"
-                className={`btn btn-sm ${task.status === 'done' ? 'btn-primary' : 'btn-secondary'}`} 
-                onClick={() => onStatusChange('done')}
+                className={`btn btn-sm ${task.status === 'review' ? 'btn-primary' : 'btn-secondary'}`}
+                onClick={() => onStatusChange('review')}
                 disabled={!canChangeStatusOrProgress}
+                title="Сдать выполненную работу руководителю на проверку"
               >
-                ✅ Выполнено
+                🔍 Сдать на проверку
+              </button>
+              <button
+                type="button"
+                className={`btn btn-sm ${task.status === 'done' ? 'btn-primary' : 'btn-secondary'}`}
+                onClick={() => onStatusChange('done')}
+                disabled={!canChangeStatusOrProgress || !canAcceptTask}
+                title={canAcceptTask ? 'Принять работу' : 'Принимать задачу может только руководитель'}
+              >
+                ✅ Принять
               </button>
             </div>
+            {!canAcceptTask && (
+              <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '6px' }}>
+                Закончив работу, нажмите «🔍 Сдать на проверку» — принять задачу может только руководитель.
+              </div>
+            )}
           </div>
+
+          {/* Review queue: accept the work and score its quality, or send it back */}
+          {task.status === 'review' && canAcceptTask && (
+            <div style={{ background: 'rgba(234, 179, 8, 0.08)', border: '1px solid rgba(234, 179, 8, 0.3)', borderRadius: '10px', padding: '14px', marginBottom: '24px' }}>
+              <h4 style={{ fontSize: '13px', color: '#eab308', marginBottom: '10px' }}>🔍 Задача ждёт вашей приёмки</h4>
+              <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginBottom: '10px' }}>
+                Оцените качество работы, затем примите задачу или верните её на доработку.
+              </div>
+              <div className="detail-actions-row">
+                <button type="button" className="btn btn-sm btn-primary" onClick={() => onStatusChange('done')}>
+                  ✅ Принять работу
+                </button>
+                <button type="button" className="btn btn-sm btn-secondary" onClick={() => onStatusChange('in_progress')}>
+                  ↩️ Вернуть на доработку
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Quality 1-5, judged by a manager */}
+          {canSetDifficulty && onQualityChange ? (
+            <div className="detail-row" style={{ marginBottom: '20px', flexWrap: 'wrap' }}>
+              <span className="detail-label">
+                Качество {task.quality ? `(${task.quality}/5)` : '(не оценено)'}:
+              </span>
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '4px', flexWrap: 'wrap' }}>
+                {[1, 2, 3, 4, 5].map(val => (
+                  <button
+                    type="button"
+                    key={val}
+                    className={`btn btn-sm ${task.quality === val ? 'btn-primary' : 'btn-secondary'}`}
+                    style={{ padding: '4px 12px', fontSize: '12px' }}
+                    onClick={() => onQualityChange(val)}
+                  >
+                    {val}
+                  </button>
+                ))}
+                {task.quality > 0 && (
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-secondary"
+                    style={{ padding: '4px 10px', fontSize: '11px', marginLeft: '4px' }}
+                    onClick={() => onQualityChange(null)}
+                  >
+                    Сбросить
+                  </button>
+                )}
+              </div>
+              <div style={{ width: '100%', fontSize: '11px', color: 'var(--text-secondary)', marginTop: '6px' }}>
+                ⭐ Добавляется к баллам сотрудника вместе со сложностью.
+              </div>
+            </div>
+          ) : (
+            <div className="detail-row" style={{ marginBottom: '20px' }}>
+              <span className="detail-label">Качество:</span>
+              <span className="detail-value">
+                {task.quality > 0 ? `⭐ ${task.quality} из 5` : 'Не оценено руководителем'}
+              </span>
+            </div>
+          )}
 
           <div className="comments-section">
             <h3>💬 Комментарии</h3>

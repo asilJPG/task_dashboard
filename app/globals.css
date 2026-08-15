@@ -1416,6 +1416,7 @@ body {
 .status-badge.new { background: rgba(110, 118, 129, 0.1); color: var(--text-secondary); }
 .status-badge.in_progress { background: rgba(31, 111, 235, 0.1); color: var(--accent-blue); }
 .status-badge.stopped { background: rgba(248, 81, 73, 0.1); color: #f85149; }
+.status-badge.review { background: rgba(234, 179, 8, 0.12); color: #eab308; }
 .status-badge.done { background: rgba(48, 161, 78, 0.1); color: #3fb950; }
 
 .detail-actions-row {

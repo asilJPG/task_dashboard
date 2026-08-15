@@ -49,8 +49,12 @@ export default function EmployeeRatingModal({ isOpen, onClose, row, monthLabel }
               <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>баллов за сроки</div>
             </div>
             <div style={{ flex: 1, minWidth: '110px', background: '#0d1117', border: '1px solid var(--border-color)', borderRadius: '10px', padding: '12px' }}>
+              <div style={{ fontSize: '24px', fontWeight: 700, color: '#38bdf8', lineHeight: 1.1 }}>{row.qualitySum}</div>
+              <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>баллов за качество</div>
+            </div>
+            <div style={{ flex: 1, minWidth: '110px', background: '#0d1117', border: '1px solid var(--border-color)', borderRadius: '10px', padding: '12px' }}>
               <div style={{ fontSize: '24px', fontWeight: 700, color: '#34d399', lineHeight: 1.1 }}>{row.closedCount}</div>
-              <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>закрыто из {row.totalTasks}</div>
+              <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>принято из {row.totalTasks}</div>
             </div>
           </div>
 
@@ -93,10 +97,14 @@ export default function EmployeeRatingModal({ isOpen, onClose, row, monthLabel }
                       <span>
                         ⚡ Сложность <strong style={{ color: '#f59e0b' }}>{item.difficulty}</strong>
                         {' '}{item.bonus >= 0 ? '+' : '−'} срок <strong style={{ color: item.bonus > 0 ? '#34d399' : item.bonus < 0 ? '#f85149' : '#8d96a0' }}>{Math.abs(item.bonus)}</strong>
+                        {item.quality > 0 && <> + качество <strong style={{ color: '#38bdf8' }}>{item.quality}</strong></>}
                         {' = '}<strong>{item.points}</strong>
                       </span>
                     ) : (
                       <span style={{ color: '#db6d28' }}>⚠️ Сложность не выставлена — задача не приносит баллов</span>
+                    )}
+                    {item.sharePercent < 100 && (
+                      <span style={{ color: '#a78bfa' }}>👥 Доля в команде: {item.sharePercent}%</span>
                     )}
                     <span style={{ color: dl.color }}>{dl.text}</span>
                     {item.task.deadline && <span>📅 Дедлайн: {formatDate(item.task.deadline)}</span>}
@@ -137,10 +145,11 @@ export default function EmployeeRatingModal({ isOpen, onClose, row, monthLabel }
           </div>
 
           <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '18px', lineHeight: 1.6 }}>
-            Баллы за задачу = сложность + балл за срок: в срок <strong>+{RATING_CONFIG.IN_TIME_BONUS}</strong>,
+            Баллы за задачу = сложность + балл за срок + качество. Срок: в срок <strong>+{RATING_CONFIG.IN_TIME_BONUS}</strong>,
             просрочка до {RATING_CONFIG.GRACE_DAYS} дней <strong>{RATING_CONFIG.GRACE_BONUS}</strong>,
             больше {RATING_CONFIG.GRACE_DAYS} дней <strong>{RATING_CONFIG.LATE_PENALTY}</strong>.
-            Незакрытые задачи баллы не отнимают.
+            Срок считается по дате сдачи на проверку, а не по дате приёмки.
+            В командных задачах баллы делятся по долям. Незакрытые задачи баллы не отнимают.
           </div>
         </div>
 

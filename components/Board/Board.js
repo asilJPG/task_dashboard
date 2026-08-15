@@ -7,6 +7,7 @@ const columns = [
   { id: 'new', title: 'Новая', icon: '📋', color: '#38bdf8' },
   { id: 'in_progress', title: 'В работе', icon: '🔄', color: '#a78bfa' },
   { id: 'stopped', title: 'На стопе', icon: '🛑', color: '#f97316' },
+  { id: 'review', title: 'На рассмотрении', icon: '🔍', color: '#eab308' },
   { id: 'done', title: 'Готово', icon: '✅', color: '#34d399' }
 ];
 

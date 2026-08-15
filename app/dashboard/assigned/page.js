@@ -9,7 +9,7 @@ import { supabase } from '@/lib/supabase';
 
 export default function AssignedTasksPage() {
   const { user, profile } = useAuth();
-  const { tasks, updateTask, changeStatus, deleteTask, addComment, setDifficulty } = useTasks(user?.id, profile);
+  const { tasks, updateTask, changeStatus, deleteTask, addComment, setDifficulty, setQuality, setAssigneeShares } = useTasks(user?.id, profile);
   
   const [profiles, setProfiles] = useState([]);
   const [detailTask, setDetailTask] = useState(null);
@@ -144,6 +144,20 @@ export default function AssignedTasksPage() {
     }
   };
 
+  const handleQualityChange = async (taskId, quality) => {
+    await setQuality(taskId, quality);
+    if (detailTask && detailTask.id === taskId) {
+      setDetailTask(prev => ({ ...prev, quality }));
+    }
+  };
+
+  const handleSharesChange = async (taskId, shares) => {
+    await setAssigneeShares(taskId, shares);
+    if (detailTask && detailTask.id === taskId) {
+      setDetailTask(prev => ({ ...prev, assignee_shares: shares }));
+    }
+  };
+
   return (
     <div className="dashboard-view">
       <h2>📤 Я назначил</h2>
@@ -228,6 +242,8 @@ export default function AssignedTasksPage() {
           onProgressChange={(progress) => handleProgressChange(detailTask.id, progress)}
           onTogglePin={() => handleTogglePin(detailTask.id)}
           onDifficultyChange={(difficulty) => handleDifficultyChange(detailTask.id, difficulty)}
+          onQualityChange={(quality) => handleQualityChange(detailTask.id, quality)}
+          onSharesChange={(shares) => handleSharesChange(detailTask.id, shares)}
           onClose={() => setDetailTask(null)}
           currentUserId={user?.id}
         />

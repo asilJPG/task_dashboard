@@ -14,7 +14,7 @@ import { normalizeTags } from '@/lib/utils';
 
 export default function KanbanPage() {
   const { user, profile } = useAuth();
-  const { tasks, createTask, updateTask, changeStatus, deleteTask, addComment, setDifficulty } = useTasks(user?.id, profile);
+  const { tasks, createTask, updateTask, changeStatus, deleteTask, addComment, setDifficulty, setQuality, setAssigneeShares } = useTasks(user?.id, profile);
   const searchParams = useSearchParams();
   const taskIdParam = searchParams.get('task');
   
@@ -198,6 +198,20 @@ export default function KanbanPage() {
     }
   };
 
+  const handleQualityChange = async (taskId, quality) => {
+    await setQuality(taskId, quality);
+    if (detailTask && detailTask.id === taskId) {
+      setDetailTask(prev => ({ ...prev, quality }));
+    }
+  };
+
+  const handleSharesChange = async (taskId, shares) => {
+    await setAssigneeShares(taskId, shares);
+    if (detailTask && detailTask.id === taskId) {
+      setDetailTask(prev => ({ ...prev, assignee_shares: shares }));
+    }
+  };
+
   return (
     <div className="dashboard-container">
       <div className="board-toolbar" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
@@ -323,6 +337,8 @@ export default function KanbanPage() {
           onProgressChange={(progress) => handleProgressChange(detailTask.id, progress)}
           onTogglePin={() => handleTogglePin(detailTask.id)}
           onDifficultyChange={(difficulty) => handleDifficultyChange(detailTask.id, difficulty)}
+          onQualityChange={(quality) => handleQualityChange(detailTask.id, quality)}
+          onSharesChange={(shares) => handleSharesChange(detailTask.id, shares)}
           onClose={() => setDetailTask(null)}
           currentUserId={user?.id}
         />

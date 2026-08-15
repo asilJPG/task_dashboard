@@ -161,18 +161,27 @@ export default function RatingPage() {
       <div className="analytics-card" style={{ marginTop: '16px' }}>
         <h3>Как считается</h3>
         <div style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: '1.7' }}>
-          <div>Задача учитывается в том месяце, в котором была <strong>закрыта</strong>. Рейтинг обнуляется каждый месяц.</div>
-          <div style={{ marginTop: '8px' }}>Баллы за задачу = <strong>сложность + балл за срок</strong>:</div>
+          <div>
+            Считаются только <strong>принятые</strong> руководителем задачи. Задача попадает в месяц,
+            в котором её <strong>сдали на проверку</strong>. Рейтинг обнуляется каждый месяц.
+          </div>
+          <div style={{ marginTop: '8px' }}>Баллы за задачу = <strong>сложность + балл за срок + качество</strong>:</div>
           <div style={{ marginLeft: '12px' }}>
-            <div>🎯 Уложился в дедлайн — <strong style={{ color: '#34d399' }}>+{RATING_CONFIG.IN_TIME_BONUS}</strong></div>
+            <div>⚡ Сложность — от 1 до 10, ставит руководитель</div>
+            <div>🎯 Сдал до дедлайна — <strong style={{ color: '#34d399' }}>+{RATING_CONFIG.IN_TIME_BONUS}</strong></div>
             <div>⏳ Просрочка до {RATING_CONFIG.GRACE_DAYS} дней — <strong>{RATING_CONFIG.GRACE_BONUS}</strong> (без плюса и минуса)</div>
             <div>🔴 Просрочка больше {RATING_CONFIG.GRACE_DAYS} дней — <strong style={{ color: '#f85149' }}>{RATING_CONFIG.LATE_PENALTY}</strong></div>
+            <div>⭐ Качество — от 1 до {RATING_CONFIG.MAX_QUALITY}, ставит руководитель при приёмке</div>
           </div>
           <div style={{ marginTop: '8px' }}>
-            Например: задача оценена на <strong>6</strong> и закрыта в срок → <strong>6 + 1 = 7 баллов</strong>.
+            Например: задача на <strong>6</strong>, сдана в срок, качество <strong>5</strong> → <strong>6 + 1 + 5 = 12 баллов</strong>.
           </div>
           <div style={{ marginTop: '8px' }}>
-            Итог за месяц = сумма баллов по всем закрытым задачам. Задачи без выставленной сложности не приносят баллов.
+            Срок проверяется по дате сдачи, поэтому медленная приёмка не лишает сотрудника балла за срок.
+            В командных задачах баллы делятся по долям, которые задаёт руководитель (без долей — поровну).
+          </div>
+          <div style={{ marginTop: '8px' }}>
+            Итог за месяц = сумма баллов по всем принятым задачам. Задачи без выставленной сложности не приносят баллов.
           </div>
         </div>
       </div>
