@@ -318,7 +318,6 @@ export default function KanbanPage() {
           task={editingTask}
           profiles={profiles}
           currentUser={user}
-          currentProfile={profile}
           onSave={handleSaveTask}
           onClose={() => { setShowTaskForm(false); setEditingTask(null); }}
         />

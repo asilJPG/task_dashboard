@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { normalizeTags } from '@/lib/utils';
 
-export default function TaskFormModal({ isOpen, onClose, onSave, task, profiles = [], currentUser, currentProfile }) {
+export default function TaskFormModal({ isOpen, onClose, onSave, task, profiles = [], currentUser }) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [assignedTo, setAssignedTo] = useState('');
@@ -46,10 +46,6 @@ export default function TaskFormModal({ isOpen, onClose, onSave, task, profiles 
   }, [task, isOpen, currentUser]);
 
   if (!isOpen) return null;
-
-  // A task can be logged on behalf of whoever actually requested it — managers only, so an
-  // employee cannot attribute their own task to the boss.
-  const canPickAuthor = currentProfile?.is_admin || currentProfile?.role === 'admin' || currentProfile?.role === 'manager';
 
   const handleAssigneeToggle = (profileId) => {
     setAssignees(prev => {
@@ -109,8 +105,7 @@ export default function TaskFormModal({ isOpen, onClose, onSave, task, profiles 
       progress,
       tags: finalTags
     };
-    // Only managers may attribute a task to someone else; for everyone else the author stands.
-    if (canPickAuthor && createdBy) {
+    if (createdBy) {
       payload.created_by = createdBy;
     }
     if (task?.id) {
@@ -148,25 +143,23 @@ export default function TaskFormModal({ isOpen, onClose, onSave, task, profiles 
               />
             </div>
 
-            {canPickAuthor && (
-              <div className="form-group">
-                <label className="form-label">📌 Кто ставит задачу</label>
-                <select
-                  className="form-select"
-                  value={createdBy}
-                  onChange={(e) => setCreatedBy(e.target.value)}
-                >
-                  {profiles.map(p => (
-                    <option key={p.id} value={p.id}>
-                      {p.name} {p.id === currentUser?.id ? '(Вы)' : ''}
-                    </option>
-                  ))}
-                </select>
-                <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>
-                  Задача будет числиться поручением от этого человека.
-                </div>
+            <div className="form-group">
+              <label className="form-label">📌 Кто поставил задачу</label>
+              <select
+                className="form-select"
+                value={createdBy}
+                onChange={(e) => setCreatedBy(e.target.value)}
+              >
+                {profiles.map(p => (
+                  <option key={p.id} value={p.id}>
+                    {p.name} {p.id === currentUser?.id ? '(Вы)' : ''}
+                  </option>
+                ))}
+              </select>
+              <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                Если работу поручил кто-то другой — укажите его. Задача будет числиться поручением от этого человека, а не задачей, которую вы нашли себе сами.
               </div>
-            )}
+            </div>
 
             <div className="form-group">
               <label className="form-label">👨‍💻 Исполнители (выберите без ограничений) *</label>
