@@ -222,7 +222,10 @@ export function useTasks(userId, profile) {
 
     const { error } = await supabase.from('tb_tasks').update(updates).eq('id', taskId);
     if (error) {
+      // Surfaced to the caller: a rejected write (missing column, failed CHECK) used to leave
+      // the button looking broken with the reason buried in the console.
       console.error('Error changing status:', error);
+      return { error };
     } else {
       await supabase.from('tb_task_history').insert([{
         task_id: taskId,
@@ -275,6 +278,8 @@ export function useTasks(userId, profile) {
         }
       }
     }
+
+    return { error: null };
   };
 
   const updateProgress = async (taskId, progress) => {

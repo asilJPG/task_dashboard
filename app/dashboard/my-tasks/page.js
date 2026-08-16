@@ -194,6 +194,7 @@ export default function MyTasksPage() {
           { id: 'new', label: 'Новые' },
           { id: 'in_progress', label: 'В работе' },
           { id: 'stopped', label: 'На стопе' },
+          { id: 'review', label: 'На рассмотрении' },
           { id: 'done', label: 'Готово' }
         ].map(filter => (
           <button 
@@ -249,7 +250,10 @@ export default function MyTasksPage() {
           onEdit={() => {}}
           onDelete={async () => { await deleteTask(detailTask.id); setDetailTask(null); }}
           onComment={handleAddComment}
-          onStatusChange={(status) => changeStatus(detailTask.id, status)}
+          onStatusChange={async (status) => {
+            const res = await changeStatus(detailTask.id, status);
+            if (res?.error) alert(`Не удалось изменить статус: ${res.error.message || res.error}`);
+          }}
           onProgressChange={(progress) => handleProgressChange(detailTask.id, progress)}
           onTogglePin={() => handleTogglePin(detailTask.id)}
           onDifficultyChange={(difficulty) => handleDifficultyChange(detailTask.id, difficulty)}

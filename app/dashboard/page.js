@@ -120,7 +120,7 @@ export default function KanbanPage() {
     setDetailTask(task);
   };
 
-  const handleStatusChange = (taskId, newStatus) => {
+  const handleStatusChange = async (taskId, newStatus) => {
     const task = tasks.find(t => t.id === taskId);
     if (!task) return;
 
@@ -137,8 +137,17 @@ export default function KanbanPage() {
 
     if (newStatus === 'stopped') {
       setStopTask(task);
-    } else {
-      changeStatus(taskId, newStatus);
+      return;
+    }
+
+    if (newStatus === 'done' && !(profile?.is_admin || profile?.role === 'admin' || profile?.role === 'manager')) {
+      alert('🔒 Принять задачу может только руководитель. Отправьте её на рассмотрение — статус «🔍 На рассмотрении».');
+      return;
+    }
+
+    const res = await changeStatus(taskId, newStatus);
+    if (res?.error) {
+      alert(`Не удалось изменить статус: ${res.error.message || res.error}`);
     }
   };
 

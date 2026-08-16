@@ -238,7 +238,10 @@ export default function AssignedTasksPage() {
           onEdit={() => {}}
           onDelete={async () => { await deleteTask(detailTask.id); setDetailTask(null); }}
           onComment={handleAddComment}
-          onStatusChange={(status) => changeStatus(detailTask.id, status)}
+          onStatusChange={async (status) => {
+            const res = await changeStatus(detailTask.id, status);
+            if (res?.error) alert(`Не удалось изменить статус: ${res.error.message || res.error}`);
+          }}
           onProgressChange={(progress) => handleProgressChange(detailTask.id, progress)}
           onTogglePin={() => handleTogglePin(detailTask.id)}
           onDifficultyChange={(difficulty) => handleDifficultyChange(detailTask.id, difficulty)}
