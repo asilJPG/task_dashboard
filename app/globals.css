@@ -1513,22 +1513,64 @@ body {
     gap: 10px;
   }
   .search-bar {
-    max-width: 160px;
+    max-width: 150px;
+  }
+
+  /* iOS Safari zooms the whole page when a focused field is under 16px, which throws the
+     layout off and is very hard to recover from by hand. Every text control stays at 16px. */
+  .search-input,
+  .form-input,
+  .form-select,
+  .form-textarea,
+  input[type="text"],
+  input[type="password"],
+  input[type="number"],
+  input[type="date"],
+  textarea,
+  select {
+    font-size: 16px !important;
   }
   .search-input {
-    padding: 5px 10px 5px 28px;
-    font-size: 12px;
+    padding: 7px 10px 7px 30px;
   }
 
   .main-content {
-    padding: 12px 10px 80px 10px; /* Padding for bottom nav */
+    /* Bottom padding clears the fixed nav, plus the home indicator on notched iPhones. */
+    padding: 12px 12px calc(84px + env(safe-area-inset-bottom)) 12px;
   }
 
+  /* Toolbar: title on its own line, controls full width and comfortably tappable */
   .board-toolbar {
     margin-bottom: 12px;
+    flex-direction: column;
+    align-items: stretch !important;
+    gap: 10px !important;
+  }
+  .board-toolbar > div {
+    flex-direction: column;
+    align-items: stretch !important;
+    gap: 8px !important;
+    width: 100%;
   }
   .board-toolbar h2 {
-    font-size: 18px;
+    font-size: 20px;
+    margin: 0 0 2px 0;
+    white-space: nowrap;
+  }
+  .board-toolbar .form-select {
+    width: 100% !important;
+    padding: 8px 12px !important;
+    min-height: 40px;
+  }
+  .board-toolbar .btn {
+    width: 100%;
+    min-height: 40px;
+    justify-content: center;
+  }
+  /* The floating "+ Задача" button already covers this action on phones; a second full-width
+     button just pushed the actual task list below the fold. */
+  .board-toolbar .btn-primary {
+    display: none;
   }
 
   /* Mobile Column Switcher Pills */
@@ -1584,14 +1626,15 @@ body {
     bottom: 0;
     left: 0;
     right: 0;
-    height: 60px;
-    background: rgba(13, 17, 23, 0.95);
+    /* Sits above the iPhone home indicator instead of underneath it. */
+    height: calc(58px + env(safe-area-inset-bottom));
+    padding: 0 4px env(safe-area-inset-bottom) 4px;
+    background: rgba(13, 17, 23, 0.96);
     backdrop-filter: blur(12px);
     border-top: 1px solid var(--border-color);
     z-index: 999;
     justify-content: space-around;
     align-items: center;
-    padding: 0 6px;
     box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.5);
   }
   .mobile-nav-item {
@@ -1601,18 +1644,25 @@ body {
     justify-content: center;
     color: var(--text-secondary);
     text-decoration: none;
-    flex: 1;
+    flex: 1 1 0;
+    min-width: 0;
     height: 100%;
-    gap: 2px;
+    gap: 3px;
+    padding: 0 2px;
     transition: all 0.2s ease;
   }
   .mobile-nav-icon {
-    font-size: 18px;
+    font-size: 19px;
     line-height: 1;
   }
+  /* Up to six items share a 375px screen, so labels must never wrap or push siblings. */
   .mobile-nav-label {
-    font-size: 10px;
+    font-size: 9.5px;
     font-weight: 500;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   .mobile-nav-item.active {
     color: #38bdf8;
@@ -1719,6 +1769,154 @@ body {
   }
   .user-name {
     display: none;
+  }
+
+  /* Detail rows stack: a fixed 120px label left too little room for controls on a phone. */
+  .detail-row {
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 14px;
+    font-size: 13px;
+  }
+  .detail-label {
+    width: 100%;
+  }
+
+  /* Score pickers (difficulty 1-10, quality 1-5, progress) as an even, thumb-sized grid
+     instead of buttons wrapping into ragged rows. */
+  .score-btn-grid {
+    display: grid !important;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 6px !important;
+    width: 100%;
+  }
+  .score-btn-grid .btn {
+    width: 100%;
+    min-height: 42px;
+    padding: 6px 2px !important;
+    font-size: 14px !important;
+  }
+  /* "Сбросить" spans the full row so it never sits as a lone squashed cell. */
+  .score-btn-grid .btn:last-child:nth-child(6),
+  .score-btn-grid .btn:last-child:nth-child(11) {
+    grid-column: 1 / -1;
+    margin-left: 0 !important;
+  }
+
+  /* Status actions: two per row, each big enough to hit reliably. */
+  .detail-actions-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .detail-actions-row .btn {
+    width: 100%;
+    min-height: 44px;
+    font-size: 13px;
+  }
+
+  /* Header stacks: title across the top, actions in one row beneath it, close button pinned
+     to the corner. Side by side it squeezed the title into a narrow column and dropped the
+     close button to the bottom centre. */
+  .modal-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    padding: 14px 48px 12px 16px;
+    position: relative;
+    /* Stays put while the long task body scrolls underneath. */
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    background: #161b22;
+  }
+  .modal-header h3 {
+    font-size: 15px;
+    line-height: 1.35;
+    margin: 0;
+  }
+  .modal-header-actions {
+    display: flex;
+    gap: 6px;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .modal-header-actions::-webkit-scrollbar {
+    display: none;
+  }
+  .modal-header-actions .btn {
+    flex: 1 1 0;
+    min-height: 38px;
+    font-size: 12px;
+    white-space: nowrap;
+    justify-content: center;
+  }
+  .modal-close {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 34px;
+    height: 34px;
+    font-size: 22px;
+    background: #21262d;
+    border-radius: 50%;
+    color: var(--text-primary);
+  }
+
+  /* Filter chips scroll sideways rather than stacking into several rows. */
+  .filter-bar {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    gap: 6px;
+    padding-bottom: 6px;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  .filter-bar::-webkit-scrollbar {
+    display: none;
+  }
+  .filter-chip {
+    white-space: nowrap;
+    flex: 0 0 auto;
+    min-height: 38px;
+  }
+
+  .analytics-card {
+    padding: 14px 12px;
+  }
+  .analytics-view h2 {
+    font-size: 20px;
+  }
+
+  /* Rating row: rank + avatar + name on top, score as its own footer line. Letting the score
+     block wrap on its own left it floating centred under the name. */
+  .rating-row {
+    align-items: flex-start !important;
+    gap: 10px !important;
+    row-gap: 8px !important;
+  }
+  .rating-info {
+    min-width: 0 !important;
+    flex: 1 1 140px !important;
+  }
+  .rating-score {
+    width: 100%;
+    min-width: 0 !important;
+    text-align: left !important;
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    padding-top: 8px;
+    border-top: 1px solid var(--border-color);
+  }
+  .rating-score-value {
+    font-size: 26px !important;
+  }
+  .rating-score > div:last-child {
+    margin-left: auto;
+    margin-top: 0 !important;
   }
 }
 

@@ -168,6 +168,7 @@ export default function RatingPage() {
               return (
                 <div
                   key={row.profile.id}
+                  className="rating-row"
                   onClick={() => setSelectedId(row.profile.id)}
                   title="Открыть подробный разбор баллов"
                   style={{
@@ -190,7 +191,7 @@ export default function RatingPage() {
                     {row.profile.avatar || '👤'}
                   </div>
 
-                  <div style={{ flex: 1, minWidth: '160px' }}>
+                  <div className="rating-info" style={{ flex: 1, minWidth: '160px' }}>
                     <div style={{ fontWeight: 600, fontSize: '13px', color: 'var(--text-primary)' }}>{row.profile.name}</div>
                     <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '3px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
                       <span>✅ Закрыто: <strong style={{ color: '#34d399' }}>{row.closedCount}</strong> из {row.totalTasks} ({row.closedPercent}%)</span>
@@ -207,8 +208,8 @@ export default function RatingPage() {
                     </div>
                   </div>
 
-                  <div style={{ textAlign: 'right', minWidth: '90px' }}>
-                    <div style={{ fontSize: '22px', fontWeight: 700, color: tab.color, lineHeight: 1.1 }}>
+                  <div className="rating-score" style={{ textAlign: 'right', minWidth: '90px' }}>
+                    <div className="rating-score-value" style={{ fontSize: '22px', fontWeight: 700, color: tab.color, lineHeight: 1.1 }}>
                       {tab.signed && row.tabValue > 0 ? `+${row.tabValue}` : row.tabValue}
                     </div>
                     <div style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>{tab.unit}</div>

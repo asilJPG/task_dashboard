@@ -158,7 +158,7 @@ export default function TaskDetailModal({
 
           <div className="detail-row" style={{ marginBottom: '20px', opacity: canChangeStatusOrProgress ? 1 : 0.5, pointerEvents: canChangeStatusOrProgress ? 'auto' : 'none' }}>
             <span className="detail-label">Прогресс ({localProgress}%):</span>
-            <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            <div className="score-btn-grid" style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
               {[0, 25, 50, 75, 100].map(val => (
                 <button
                   type="button"
@@ -182,7 +182,7 @@ export default function TaskDetailModal({
               <span className="detail-label">
                 Сложность {task.difficulty ? `(${task.difficulty}/10)` : '(не оценена)'}:
               </span>
-              <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '4px', flexWrap: 'wrap' }}>
+              <div className="score-btn-grid" style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '4px', flexWrap: 'wrap' }}>
                 {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(val => (
                   <button
                     type="button"
@@ -217,6 +217,35 @@ export default function TaskDetailModal({
               </span>
             </div>
           )}
+
+          {/* Quality 1-5, judged by a manager */}
+          {canSetDifficulty && onQualityChange ? (
+            <div className="detail-row" style={{ marginBottom: '20px', flexWrap: 'wrap' }}>
+              <span className="detail-label">
+                Качество {task.quality ? `(${task.quality}/5)` : '(не оценено)'}:
+              </span>
+              <div className="score-btn-grid" style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '4px', flexWrap: 'wrap' }}>
+                {[1, 2, 3, 4, 5].map(val => (
+                  <button
+                    type="button"
+                    key={val}
+                    className={`btn btn-sm ${task.quality === val ? 'btn-primary' : 'btn-secondary'}`}
+                    style={{ padding: '4px 12px', fontSize: '12px' }}
+                    onClick={() => onQualityChange(val)}
+                  >
+                    {val}
+                  </button>
+                ))}
+                {task.quality > 0 && (
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-secondary"
+                    style={{ padding: '4px 10px', fontSize: '11px', marginLeft: '4px' }}
+                    onClick={() => onQualityChange(null)}
+                  >
+                    Сбросить
+                  </button>
+                )}
 
           {/* Team split: how the task's points are divided between assignees */}
           {assigneesList.length > 1 && (
@@ -345,34 +374,6 @@ export default function TaskDetailModal({
             </div>
           )}
 
-          {/* Quality 1-5, judged by a manager */}
-          {canSetDifficulty && onQualityChange ? (
-            <div className="detail-row" style={{ marginBottom: '20px', flexWrap: 'wrap' }}>
-              <span className="detail-label">
-                Качество {task.quality ? `(${task.quality}/5)` : '(не оценено)'}:
-              </span>
-              <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '4px', flexWrap: 'wrap' }}>
-                {[1, 2, 3, 4, 5].map(val => (
-                  <button
-                    type="button"
-                    key={val}
-                    className={`btn btn-sm ${task.quality === val ? 'btn-primary' : 'btn-secondary'}`}
-                    style={{ padding: '4px 12px', fontSize: '12px' }}
-                    onClick={() => onQualityChange(val)}
-                  >
-                    {val}
-                  </button>
-                ))}
-                {task.quality > 0 && (
-                  <button
-                    type="button"
-                    className="btn btn-sm btn-secondary"
-                    style={{ padding: '4px 10px', fontSize: '11px', marginLeft: '4px' }}
-                    onClick={() => onQualityChange(null)}
-                  >
-                    Сбросить
-                  </button>
-                )}
               </div>
               <div style={{ width: '100%', fontSize: '11px', color: 'var(--text-secondary)', marginTop: '6px' }}>
                 ⭐ Добавляется к баллам сотрудника вместе со сложностью.

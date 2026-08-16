@@ -223,7 +223,7 @@ export default function Header() {
         </Link>
         <Link href="/dashboard/assigned" className={`mobile-nav-item ${pathname === '/dashboard/assigned' ? 'active' : ''}`}>
           <span className="mobile-nav-icon">📤</span>
-          <span className="mobile-nav-label">Я назначил</span>
+          <span className="mobile-nav-label">Назначил</span>
         </Link>
         <Link href="/dashboard/analytics" className={`mobile-nav-item ${pathname === '/dashboard/analytics' ? 'active' : ''}`}>
           <span className="mobile-nav-icon">📊</span>
