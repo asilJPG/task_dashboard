@@ -5,6 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useTasks } from '@/hooks/useTasks';
 import { supabase } from '@/lib/supabase';
 import { MONTH_NAMES, getEffectiveDate } from '@/lib/rating';
+import EmployeeTasksModal from '@/components/TeamModal/EmployeeTasksModal';
 
 const ALL_TIME = 'all';
 
@@ -25,6 +26,7 @@ export default function AnalyticsPage() {
   const [profiles, setProfiles] = useState([]);
   const [hoveredId, setHoveredId] = useState(null);
   const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState(null);
 
   const now = new Date();
   const [period, setPeriod] = useState({ mode: ALL_TIME, year: now.getFullYear(), month: now.getMonth() });
@@ -202,6 +204,9 @@ export default function AnalyticsPage() {
     .filter(p => p.assignedTasks.length >= 2)
     .sort((a, b) => a.progress - b.progress || b.unfinished - a.unfinished)[0] || null;
 
+  // Read from the freshly computed stats, so the open modal follows period changes and live edits.
+  const selectedEmployee = assigneeStats.find(p => p.id === selectedEmployeeId) || null;
+
   return (
     <div className="analytics-view">
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px', marginBottom: '16px' }}>
@@ -342,13 +347,22 @@ export default function AnalyticsPage() {
 
         <div className="analytics-card">
           <h3>Продуктивность команды</h3>
+          <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginBottom: '12px' }}>
+            Нажмите на сотрудника, чтобы посмотреть его задачи по статусам.
+          </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
             {assigneeStats.map(stat => (
-              <div key={stat.id}>
+              <div
+                key={stat.id}
+                onClick={() => setSelectedEmployeeId(stat.id)}
+                title={`Открыть задачи: ${stat.name}`}
+                style={{ cursor: 'pointer' }}
+              >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
                   <div className="avatar-circle" style={{ width: 22, height: 22, backgroundColor: stat.color, fontSize: 11 }}>{stat.avatar}</div>
                   <span style={{ fontSize: 13, fontWeight: 500 }}>{stat.name}</span>
                   <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--text-secondary)' }}>{stat.progress}% ({stat.completed}/{stat.assignedTasks.length})</span>
+                  <span style={{ fontSize: 11, color: '#38bdf8' }}>→</span>
                 </div>
                 <div className="task-progress-bar">
                   <div className="task-progress-fill" style={{ width: `${stat.progress}%`, backgroundColor: '#2ea043' }}></div>
@@ -375,6 +389,15 @@ export default function AnalyticsPage() {
           </div>
         </div>
       </div>
+
+      <EmployeeTasksModal
+        isOpen={!!selectedEmployee}
+        employee={selectedEmployee}
+        tasks={selectedEmployee ? selectedEmployee.assignedTasks : []}
+        profiles={profiles}
+        periodLabel={period.mode === ALL_TIME ? 'за всё время' : `${MONTH_NAMES[period.month]} ${period.year}`}
+        onClose={() => setSelectedEmployeeId(null)}
+      />
     </div>
   );
 }
