@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState, useMemo } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { useTasks } from '@/hooks/useTasks';
 import { supabase } from '@/lib/supabase';
 import { MONTH_NAMES, getEffectiveDate } from '@/lib/rating';
 import EmployeeTasksModal from '@/components/TeamModal/EmployeeTasksModal';
@@ -19,11 +18,11 @@ const STATUS_META = [
 ];
 
 export default function AnalyticsPage() {
-  const { user, profile } = useAuth();
-  const { tasks: allTasks } = useTasks(user?.id, profile);
+  const { profile } = useAuth();
   const canvasRef = useRef(null);
   const segmentsRef = useRef(null);
   const [profiles, setProfiles] = useState([]);
+  const [allTasks, setAllTasks] = useState([]);
   const [hoveredId, setHoveredId] = useState(null);
   const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
   const [selectedEmployeeId, setSelectedEmployeeId] = useState(null);
@@ -37,6 +36,24 @@ export default function AnalyticsPage() {
       if (data) setProfiles(data);
     };
     fetchProfiles();
+  }, []);
+
+  // Analytics is company-wide for everyone. useTasks would narrow the list to the viewer's own
+  // tasks, which turned this page into a personal report instead of a team picture.
+  useEffect(() => {
+    const fetchAllTasks = async () => {
+      const { data } = await supabase.from('tb_tasks').select('*');
+      if (data) setAllTasks(data);
+    };
+    fetchAllTasks();
+
+    const channel = supabase.channel('analytics-tasks')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tb_tasks' }, () => {
+        fetchAllTasks();
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
   }, []);
 
   // A task belongs to a month if it was created in it or finished in it, so the picture covers
