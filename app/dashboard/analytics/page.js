@@ -1,15 +1,30 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useMemo } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useTasks } from '@/hooks/useTasks';
 import { supabase } from '@/lib/supabase';
+import { MONTH_NAMES, getEffectiveDate } from '@/lib/rating';
+
+const ALL_TIME = 'all';
+
+// Every status the donut and its legend cover, in display order.
+const STATUS_META = [
+  { id: 'new', label: 'Новые', color: '#6e7681' },
+  { id: 'in_progress', label: 'В работе', color: '#1f6feb' },
+  { id: 'stopped', label: 'На стопе', color: '#da3633' },
+  { id: 'review', label: 'На рассмотрении', color: '#eab308' },
+  { id: 'done', label: 'Готово', color: '#238636' }
+];
 
 export default function AnalyticsPage() {
   const { user, profile } = useAuth();
-  const { tasks } = useTasks(user?.id, profile);
+  const { tasks: allTasks } = useTasks(user?.id, profile);
   const canvasRef = useRef(null);
   const [profiles, setProfiles] = useState([]);
+
+  const now = new Date();
+  const [period, setPeriod] = useState({ mode: ALL_TIME, year: now.getFullYear(), month: now.getMonth() });
 
   useEffect(() => {
     const fetchProfiles = async () => {
@@ -18,6 +33,37 @@ export default function AnalyticsPage() {
     };
     fetchProfiles();
   }, []);
+
+  // A task belongs to a month if it was created in it or finished in it, so the picture covers
+  // both what came in and what was cleared — carry-over tasks included.
+  const tasks = useMemo(() => {
+    if (period.mode === ALL_TIME) return allTasks;
+    const start = new Date(period.year, period.month, 1).getTime();
+    const end = new Date(period.year, period.month + 1, 1).getTime();
+    return allTasks.filter(t => {
+      const created = t.created_at ? new Date(t.created_at).getTime() : null;
+      const finishedDate = getEffectiveDate(t);
+      const finished = finishedDate ? finishedDate.getTime() : null;
+      const createdIn = created !== null && created >= start && created < end;
+      const finishedIn = finished !== null && finished >= start && finished < end;
+      return createdIn || finishedIn;
+    });
+  }, [allTasks, period]);
+
+  // Months that actually have data, newest first — no empty periods in the picker.
+  const availableMonths = useMemo(() => {
+    const keys = new Set();
+    allTasks.forEach(t => {
+      [t.created_at, t.completed_at, t.submitted_at].forEach(raw => {
+        if (!raw) return;
+        const d = new Date(raw);
+        if (!isNaN(d)) keys.add(`${d.getFullYear()}-${d.getMonth()}`);
+      });
+    });
+    return [...keys]
+      .map(k => { const [y, m] = k.split('-').map(Number); return { year: y, month: m }; })
+      .sort((a, b) => b.year - a.year || b.month - a.month);
+  }, [allTasks]);
 
   useEffect(() => {
     if (!canvasRef.current || tasks.length === 0) return;
@@ -31,19 +77,15 @@ export default function AnalyticsPage() {
 
     ctx.clearRect(0, 0, width, height);
 
-    const counts = {
-      new: tasks.filter(t => t.status === 'new').length,
-      in_progress: tasks.filter(t => t.status === 'in_progress').length,
-      stopped: tasks.filter(t => t.status === 'stopped').length,
-      done: tasks.filter(t => t.status === 'done').length,
-    };
+    const counts = STATUS_META.reduce((acc, s) => {
+      acc[s.id] = tasks.filter(t => t.status === s.id).length;
+      return acc;
+    }, {});
 
-    const colors = {
-      new: '#6e7681',
-      in_progress: '#1f6feb',
-      stopped: '#da3633',
-      done: '#238636'
-    };
+    const colors = STATUS_META.reduce((acc, s) => {
+      acc[s.id] = s.color;
+      return acc;
+    }, {});
 
     const total = tasks.length;
     let startAngle = -Math.PI / 2;
@@ -83,6 +125,12 @@ export default function AnalyticsPage() {
   const totalTasks = tasks.length;
   const overallProgress = totalTasks === 0 ? 0 : Math.round((doneTasks / totalTasks) * 100);
 
+  // Share of each status, shown next to its colour in the legend.
+  const statusBreakdown = STATUS_META.map(s => {
+    const count = tasks.filter(t => t.status === s.id).length;
+    return { ...s, count, percent: totalTasks === 0 ? 0 : Math.round((count / totalTasks) * 100) };
+  });
+
   const getOverdueTasks = () => {
     return tasks.filter(t => {
       if (t.status === 'done' || !t.deadline) return false;
@@ -98,12 +146,53 @@ export default function AnalyticsPage() {
       const assignedTasks = tasks.filter(t => t.assigned_to === profile.id || (Array.isArray(t.assignees) && t.assignees.includes(profile.id)));
       const completed = assignedTasks.filter(t => t.status === 'done').length;
       const progress = assignedTasks.length > 0 ? Math.round((completed / assignedTasks.length) * 100) : 0;
-      return { ...profile, assignedTasks, completed, progress };
+
+      const byStatus = STATUS_META.reduce((acc, s) => {
+        acc[s.id] = assignedTasks.filter(t => t.status === s.id).length;
+        return acc;
+      }, {});
+      const overdue = assignedTasks.filter(t => t.status !== 'done' && t.deadline && new Date(t.deadline) < new Date()).length;
+
+      return { ...profile, assignedTasks, completed, progress, byStatus, overdue, unfinished: assignedTasks.length - completed };
     }).filter(p => p.assignedTasks.length > 0);
+
+  // Weakest performer: lowest completion rate, and with equal rates the one sitting on more
+  // unfinished work. Needs a couple of tasks to judge, otherwise a single open task wins it.
+  const worstPerformer = [...assigneeStats]
+    .filter(p => p.assignedTasks.length >= 2)
+    .sort((a, b) => a.progress - b.progress || b.unfinished - a.unfinished)[0] || null;
 
   return (
     <div className="analytics-view">
-      <h2>📊 Аналитика</h2>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px', marginBottom: '16px' }}>
+        <h2 style={{ margin: 0 }}>📊 Аналитика</h2>
+        <select
+          className="form-select"
+          style={{ width: 'auto', padding: '8px 12px', fontSize: '13px', background: '#161b22' }}
+          value={period.mode === ALL_TIME ? ALL_TIME : `${period.year}-${period.month}`}
+          onChange={(e) => {
+            if (e.target.value === ALL_TIME) {
+              setPeriod(p => ({ ...p, mode: ALL_TIME }));
+            } else {
+              const [year, month] = e.target.value.split('-').map(Number);
+              setPeriod({ mode: 'month', year, month });
+            }
+          }}
+        >
+          <option value={ALL_TIME}>📅 За всё время</option>
+          {availableMonths.map(m => (
+            <option key={`${m.year}-${m.month}`} value={`${m.year}-${m.month}`}>
+              {MONTH_NAMES[m.month]} {m.year}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {period.mode !== ALL_TIME && (
+        <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginBottom: '14px' }}>
+          Показаны задачи, созданные или завершённые в этом месяце — {tasks.length} шт.
+        </div>
+      )}
 
       <div className="analytics-grid">
         <div className="analytics-card">
@@ -111,11 +200,15 @@ export default function AnalyticsPage() {
           <div className="analytics-chart-container">
             <canvas ref={canvasRef} width={200} height={200}></canvas>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'center', gap: '15px', marginTop: '16px', flexWrap: 'wrap', fontSize: '12px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}><span style={{ width: 10, height: 10, borderRadius: '50%', backgroundColor: '#6e7681' }}></span>Новые</div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}><span style={{ width: 10, height: 10, borderRadius: '50%', backgroundColor: '#1f6feb' }}></span>В работе</div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}><span style={{ width: 10, height: 10, borderRadius: '50%', backgroundColor: '#da3633' }}></span>На стопе</div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}><span style={{ width: 10, height: 10, borderRadius: '50%', backgroundColor: '#238636' }}></span>Готово</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '16px', fontSize: '12px' }}>
+            {statusBreakdown.map(s => (
+              <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ width: 10, height: 10, borderRadius: '50%', backgroundColor: s.color, flexShrink: 0 }}></span>
+                <span style={{ flex: 1 }}>{s.label}</span>
+                <span style={{ color: 'var(--text-secondary)' }}>{s.count}</span>
+                <strong style={{ minWidth: '42px', textAlign: 'right', color: s.color }}>{s.percent}%</strong>
+              </div>
+            ))}
           </div>
         </div>
 
@@ -126,7 +219,51 @@ export default function AnalyticsPage() {
               {overallProgress}%
             </div>
           </div>
+          <div style={{ fontSize: '11px', color: 'var(--text-secondary)', textAlign: 'center' }}>
+            Выполнено {doneTasks} из {totalTasks} задач
+          </div>
         </div>
+
+        {worstPerformer && (
+          <div className="analytics-card">
+            <h3 style={{ color: '#db6d28', borderColor: 'rgba(219, 109, 40, 0.15)' }}>⚠️ Требует внимания</h3>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
+              <div className="avatar-circle" style={{ backgroundColor: worstPerformer.color || 'var(--accent)', width: 36, height: 36, fontSize: 18 }}>
+                {worstPerformer.avatar || '👤'}
+              </div>
+              <div>
+                <div style={{ fontWeight: 600, fontSize: 14 }}>{worstPerformer.name}</div>
+                <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
+                  Самый низкий процент выполнения: {worstPerformer.progress}%
+                </div>
+              </div>
+              <div style={{ marginLeft: 'auto', textAlign: 'right' }}>
+                <div style={{ fontSize: 22, fontWeight: 700, color: '#db6d28', lineHeight: 1.1 }}>{worstPerformer.unfinished}</div>
+                <div style={{ fontSize: 10, color: 'var(--text-secondary)' }}>не выполнено</div>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '7px', fontSize: 12 }}>
+              {STATUS_META.map(s => (
+                <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ width: 10, height: 10, borderRadius: '50%', backgroundColor: s.color, flexShrink: 0 }}></span>
+                  <span style={{ flex: 1 }}>{s.label}</span>
+                  <strong style={{ color: s.color }}>{worstPerformer.byStatus[s.id]}</strong>
+                </div>
+              ))}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', paddingTop: '7px', borderTop: '1px solid var(--border-color)' }}>
+                <span style={{ width: 10, height: 10, flexShrink: 0 }}>🔴</span>
+                <span style={{ flex: 1 }}>Из них просрочено</span>
+                <strong style={{ color: '#f85149' }}>{worstPerformer.overdue}</strong>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ width: 10, height: 10, flexShrink: 0 }}>📋</span>
+                <span style={{ flex: 1 }}>Всего назначено</span>
+                <strong>{worstPerformer.assignedTasks.length}</strong>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="analytics-card">
           <h3>Продуктивность команды</h3>

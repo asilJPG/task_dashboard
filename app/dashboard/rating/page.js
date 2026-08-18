@@ -244,8 +244,8 @@ export default function RatingPage() {
           <div style={{ marginLeft: '12px' }}>
             <div>⚡ Сложность — от 1 до 10, ставит руководитель</div>
             <div>🎯 Сдал до дедлайна — <strong style={{ color: '#34d399' }}>+{RATING_CONFIG.IN_TIME_BONUS}</strong></div>
-            <div>⏳ Просрочка до {RATING_CONFIG.GRACE_DAYS} дней — <strong>{RATING_CONFIG.GRACE_BONUS}</strong> (без плюса и минуса)</div>
-            <div>🔴 Просрочка больше {RATING_CONFIG.GRACE_DAYS} дней — <strong style={{ color: '#f85149' }}>{RATING_CONFIG.LATE_PENALTY}</strong></div>
+            <div>⏳ Просрочка меньше {RATING_CONFIG.LATE_PERIOD_DAYS} дней — <strong>0</strong> (неполные дни не считаются)</div>
+            <div>🔴 Просрочка — <strong style={{ color: '#f85149' }}>−1</strong> за каждые полные {RATING_CONFIG.LATE_PERIOD_DAYS} дней: 10 дн = −1, 20 дн = −2, 30 дн = −3</div>
             <div>⭐ Качество — от 1 до {RATING_CONFIG.MAX_QUALITY}, ставит руководитель при приёмке</div>
           </div>
           <div style={{ marginTop: '8px' }}>

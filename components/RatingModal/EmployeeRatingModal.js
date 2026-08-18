@@ -146,8 +146,8 @@ export default function EmployeeRatingModal({ isOpen, onClose, row, monthLabel }
 
           <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '18px', lineHeight: 1.6 }}>
             Баллы за задачу = сложность + балл за срок + качество. Срок: в срок <strong>+{RATING_CONFIG.IN_TIME_BONUS}</strong>,
-            просрочка до {RATING_CONFIG.GRACE_DAYS} дней <strong>{RATING_CONFIG.GRACE_BONUS}</strong>,
-            больше {RATING_CONFIG.GRACE_DAYS} дней <strong>{RATING_CONFIG.LATE_PENALTY}</strong>.
+            просрочка — <strong>−1</strong> за каждые полные {RATING_CONFIG.LATE_PERIOD_DAYS} дней
+            (10 дн = −1, 20 дн = −2, 30 дн = −3; неполные дни не считаются).
             Срок считается по дате сдачи на проверку, а не по дате приёмки.
             В командных задачах баллы делятся по долям. Незакрытые задачи баллы не отнимают.
           </div>
