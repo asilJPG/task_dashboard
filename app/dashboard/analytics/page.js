@@ -21,7 +21,10 @@ export default function AnalyticsPage() {
   const { user, profile } = useAuth();
   const { tasks: allTasks } = useTasks(user?.id, profile);
   const canvasRef = useRef(null);
+  const segmentsRef = useRef(null);
   const [profiles, setProfiles] = useState([]);
+  const [hoveredId, setHoveredId] = useState(null);
+  const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
 
   const now = new Date();
   const [period, setPeriod] = useState({ mode: ALL_TIME, year: now.getFullYear(), month: now.getMonth() });
@@ -67,7 +70,7 @@ export default function AnalyticsPage() {
 
   useEffect(() => {
     if (!canvasRef.current || tasks.length === 0) return;
-    
+
     const ctx = canvasRef.current.getContext('2d');
     const width = canvasRef.current.width;
     const height = canvasRef.current.height;
@@ -77,31 +80,36 @@ export default function AnalyticsPage() {
 
     ctx.clearRect(0, 0, width, height);
 
-    const counts = STATUS_META.reduce((acc, s) => {
-      acc[s.id] = tasks.filter(t => t.status === s.id).length;
-      return acc;
-    }, {});
-
-    const colors = STATUS_META.reduce((acc, s) => {
-      acc[s.id] = s.color;
-      return acc;
-    }, {});
-
     const total = tasks.length;
     let startAngle = -Math.PI / 2;
+    // Remembered so a mouse position can be mapped back to the status it points at.
+    const drawn = [];
 
-    Object.keys(counts).forEach(key => {
-      const sliceAngle = (counts[key] / total) * 2 * Math.PI;
-      if (sliceAngle > 0) {
-        ctx.beginPath();
-        ctx.moveTo(centerX, centerY);
-        ctx.arc(centerX, centerY, radius, startAngle, startAngle + sliceAngle);
-        ctx.closePath();
-        ctx.fillStyle = colors[key];
-        ctx.fill();
-        startAngle += sliceAngle;
-      }
+    STATUS_META.forEach(s => {
+      const count = tasks.filter(t => t.status === s.id).length;
+      const sliceAngle = (count / total) * 2 * Math.PI;
+      if (sliceAngle <= 0) return;
+
+      const isHovered = hoveredId === s.id;
+      ctx.beginPath();
+      ctx.moveTo(centerX, centerY);
+      // The hovered slice grows slightly so it is obvious which one the tooltip describes.
+      ctx.arc(centerX, centerY, isHovered ? radius + 6 : radius, startAngle, startAngle + sliceAngle);
+      ctx.closePath();
+      ctx.fillStyle = s.color;
+      ctx.fill();
+
+      drawn.push({
+        ...s,
+        count,
+        percent: Math.round((count / total) * 100),
+        start: startAngle,
+        end: startAngle + sliceAngle
+      });
+      startAngle += sliceAngle;
     });
+
+    segmentsRef.current = { slices: drawn, centerX, centerY, radius };
 
     // Draw inner circle for donut - matches card background
     ctx.beginPath();
@@ -119,7 +127,39 @@ export default function AnalyticsPage() {
     ctx.fillStyle = '#8d96a0';
     ctx.fillText('Задач', centerX, centerY + 15);
 
-  }, [tasks]);
+  }, [tasks, hoveredId]);
+
+  // Maps a pointer position onto a slice: inside the ring, then by angle.
+  const handleChartMove = (e) => {
+    const canvas = canvasRef.current;
+    const geom = segmentsRef.current;
+    if (!canvas || !geom) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const x = (e.clientX - rect.left) * scaleX;
+    const y = (e.clientY - rect.top) * scaleY;
+
+    const dx = x - geom.centerX;
+    const dy = y - geom.centerY;
+    const distance = Math.hypot(dx, dy);
+
+    if (distance > geom.radius + 6 || distance < geom.radius * 0.6) {
+      setHoveredId(null);
+      return;
+    }
+
+    // Slices start at -90°, so shift atan2 into that same range before comparing.
+    let angle = Math.atan2(dy, dx);
+    if (angle < -Math.PI / 2) angle += Math.PI * 2;
+
+    const slice = geom.slices.find(s => angle >= s.start && angle < s.end);
+    setHoveredId(slice ? slice.id : null);
+    if (slice) setTooltipPos({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+  };
+
+  const hoveredSlice = segmentsRef.current?.slices?.find(s => s.id === hoveredId) || null;
 
   const doneTasks = tasks.filter(t => t.status === 'done').length;
   const totalTasks = tasks.length;
@@ -197,8 +237,43 @@ export default function AnalyticsPage() {
       <div className="analytics-grid">
         <div className="analytics-card">
           <h3>Статусы задач</h3>
-          <div className="analytics-chart-container">
-            <canvas ref={canvasRef} width={200} height={200}></canvas>
+          <div className="analytics-chart-container" style={{ position: 'relative' }}>
+            <canvas
+              ref={canvasRef}
+              width={200}
+              height={200}
+              onMouseMove={handleChartMove}
+              onMouseLeave={() => setHoveredId(null)}
+              style={{ cursor: hoveredSlice ? 'pointer' : 'default' }}
+            ></canvas>
+
+            {hoveredSlice && (
+              <div
+                style={{
+                  position: 'absolute',
+                  left: tooltipPos.x + 14,
+                  top: tooltipPos.y - 10,
+                  background: '#0d1117',
+                  border: `1px solid ${hoveredSlice.color}`,
+                  borderRadius: '8px',
+                  padding: '8px 10px',
+                  fontSize: '12px',
+                  whiteSpace: 'nowrap',
+                  pointerEvents: 'none',
+                  zIndex: 10,
+                  boxShadow: '0 6px 18px rgba(0, 0, 0, 0.55)'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600, marginBottom: '2px' }}>
+                  <span style={{ width: 9, height: 9, borderRadius: '50%', background: hoveredSlice.color }}></span>
+                  {hoveredSlice.label}
+                </div>
+                <div style={{ color: 'var(--text-secondary)' }}>
+                  <strong style={{ color: hoveredSlice.color }}>{hoveredSlice.percent}%</strong>
+                  {' — '}{hoveredSlice.count} из {totalTasks} задач
+                </div>
+              </div>
+            )}
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '16px', fontSize: '12px' }}>
             {statusBreakdown.map(s => (
