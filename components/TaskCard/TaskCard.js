@@ -22,38 +22,26 @@ export default function TaskCard({ task, profiles = [], allTasks = [], onClick, 
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
     >
-      <div className="task-card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-        <span className={`task-priority priority-${task.priority}`}>{getPriorityLabel(task.priority)}</span>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          {task.difficulty > 0 && (
-            <span
-              title={`Сложность: ${task.difficulty} из 10`}
-              style={{ fontSize: '10px', padding: '2px 7px', background: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b', border: '1px solid rgba(245, 158, 11, 0.3)', borderRadius: '10px', fontWeight: 600 }}
-            >
-              ⚡ {task.difficulty}
-            </span>
-          )}
-          {tagsList.length > 0 && (
-            <span className="task-tag" style={{ margin: 0, fontSize: '10px', padding: '2px 7px', background: 'rgba(124, 58, 237, 0.2)', color: '#a78bfa', border: '1px solid rgba(124, 58, 237, 0.3)', borderRadius: '10px' }}>
-              🏷️ {tagsList[0]} {tagsList.length > 1 ? `+${tagsList.length - 1}` : ''}
-            </span>
-          )}
-          {task.pinned && <span className="task-pin" style={{ fontSize: '12px' }}>📌</span>}
-        </div>
+      {/* Priority reads as a coloured dot rather than a filled pill: with difficulty, tags and
+          the pin all competing for the top row, four badges made every card look alarming. */}
+      <div className="task-card-header">
+        <span className={`task-priority-dot priority-${task.priority}`} title={`Приоритет: ${getPriorityLabel(task.priority)}`}></span>
+        <span className="task-card-number">№{taskNum}</span>
+        {task.difficulty > 0 && (
+          <span className="task-difficulty" title={`Сложность: ${task.difficulty} из 10`}>⚡{task.difficulty}</span>
+        )}
+        <span style={{ flex: 1 }}></span>
+        {task.pinned && <span className="task-pin">📌</span>}
       </div>
 
-      <h4 className="task-title">
-        <span style={{ color: '#38bdf8', marginRight: '6px', fontWeight: 'bold' }}>№{taskNum}</span>
-        {task.title}
-      </h4>
+      <h4 className="task-title">{task.title}</h4>
       {task.description && <p className="task-description">{task.description}</p>}
 
+      {/* Tags appear once, here — they used to be repeated in the header as well. */}
       {tagsList.length > 0 && (
-        <div className="task-tags" style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '6px', marginBottom: '8px' }}>
+        <div className="task-tags">
           {tagsList.map(tag => (
-            <span key={tag} className="task-tag" style={{ fontSize: '10px', padding: '2px 6px', background: 'rgba(124, 58, 237, 0.15)', color: '#a78bfa', border: '1px solid rgba(124, 58, 237, 0.25)', borderRadius: '6px' }}>
-              🏷️ {tag}
-            </span>
+            <span key={tag} className="task-tag">{tag}</span>
           ))}
         </div>
       )}
@@ -66,17 +54,17 @@ export default function TaskCard({ task, profiles = [], allTasks = [], onClick, 
       </div>
 
       {deadlineStatus && (
-        <div className={`task-deadline ${deadlineStatus.class}`}>
-          📅 {deadlineStatus.text}
-          {timing?.planned ? <span style={{ opacity: 0.75 }}> · дано {timing.planned} дн</span> : null}
+        <div className={`task-timing ${deadlineStatus.class}`}>
+          <span>{deadlineStatus.text}</span>
+          {timing?.planned ? <span className="task-timing-muted">дано {timing.planned} дн</span> : null}
         </div>
       )}
 
       {isDone && timing?.actual && (
-        <div className={`task-deadline ${timing.overdue > 0 ? 'overdue' : 'safe'}`}>
-          {timing.overdue > 0 ? '🔴' : '✅'} Выполнено за {timing.actual} дн
-          {timing.planned ? <span style={{ opacity: 0.75 }}> из {timing.planned} дн</span> : null}
-          {timing.overdue > 0 ? <span> · просрочка {timing.overdue} дн</span> : null}
+        <div className={`task-timing ${timing.overdue > 0 ? 'overdue' : 'safe'}`}>
+          <span>Выполнено за {timing.actual} дн</span>
+          {timing.planned ? <span className="task-timing-muted">из {timing.planned} дн</span> : null}
+          {timing.overdue > 0 ? <span className="task-timing-late">просрочка {timing.overdue} дн</span> : null}
         </div>
       )}
       

@@ -771,9 +771,35 @@ body {
 
 .task-card-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-bottom: 6px;
+  gap: 7px;
+  margin-bottom: 7px;
+}
+
+/* Priority as a small dot — colour without a shouting pill. */
+.task-priority-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.task-priority-dot.priority-low { background: #6e7681; }
+.task-priority-dot.priority-medium { background: var(--accent-blue); }
+.task-priority-dot.priority-high { background: #db6d28; }
+.task-priority-dot.priority-critical { background: #f85149; }
+
+.task-card-number {
+  font-size: 11px;
+  font-weight: 700;
+  color: #38bdf8;
+  letter-spacing: 0.2px;
+}
+
+.task-difficulty {
+  font-size: 10px;
+  font-weight: 600;
+  color: #f59e0b;
+  white-space: nowrap;
 }
 
 .task-priority {
@@ -809,10 +835,10 @@ body {
 }
 
 .task-title {
-  font-size: 13px;
+  font-size: 13.5px;
   font-weight: 600;
   color: var(--text-primary);
-  margin-bottom: 4px;
+  margin-bottom: 5px;
   line-height: 1.4;
 }
 
@@ -837,12 +863,40 @@ body {
 .task-tag {
   font-size: 10px;
   font-weight: 500;
-  background: rgba(177, 186, 196, 0.1);
+  background: rgba(177, 186, 196, 0.06);
   color: var(--text-secondary);
-  padding: 1px 6px;
-  border-radius: 3px;
+  padding: 2px 8px;
+  border-radius: 10px;
   border: 1px solid #30363d;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
+
+/* Timing line: plain text, no filled block. The old badge painted a whole bar of colour
+   on every card, so nothing stood out and everything looked urgent. */
+.task-timing {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  font-size: 11px;
+  margin-bottom: 8px;
+}
+.task-timing::before {
+  content: '';
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+}
+.task-timing.safe { color: #3fb950; }
+.task-timing.warning { color: #db6d28; }
+.task-timing.overdue { color: #f85149; }
+.task-timing-muted { color: var(--text-muted); }
+.task-timing-late { color: #f85149; font-weight: 600; }
 
 .task-progress {
   display: flex;
