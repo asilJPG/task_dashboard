@@ -326,6 +326,19 @@ body {
   border-color: #f85149;
 }
 
+.filters-toggle {
+  display: none;
+}
+
+.btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.btn:disabled:hover {
+  background-color: inherit;
+  border-color: inherit;
+}
+
 .btn-sm {
   padding: 3px 12px;
   font-size: 12px;
@@ -1556,6 +1569,14 @@ body {
     font-size: 20px;
     margin: 0 0 2px 0;
     white-space: nowrap;
+  }
+  /* Filters stay out of the way until asked for — three stacked selects otherwise pushed
+     the task list off the first screen. */
+  .filters-toggle {
+    display: inline-flex !important;
+  }
+  .toolbar-filters:not(.open) .form-select {
+    display: none !important;
   }
   .board-toolbar .form-select {
     width: 100% !important;

@@ -1,18 +1,16 @@
 'use client';
 
 import React from 'react';
-import { getDeadlineStatus, getPriorityLabel, normalizeTags, getTaskNumber, formatDuration } from '@/lib/utils';
+import { getDeadlineStatus, getPriorityLabel, normalizeTags, getTaskNumber, getTaskTiming } from '@/lib/utils';
 
 export default function TaskCard({ task, profiles = [], allTasks = [], onClick, draggable = true, onDragStart, onDragEnd, dragging }) {
   const creator = profiles.find(p => p.id === task.created_by);
   const assignee = profiles.find(p => p.id === task.assigned_to);
   const isDone = task.status === 'done';
   const deadlineStatus = !isDone ? getDeadlineStatus(task.deadline) : null;
-  // completed_at, not updated_at: editing a closed task (e.g. a manager setting its difficulty)
-  // must not change how long it took to finish.
-  const completionDuration = isDone && task.created_at && task.completed_at
-    ? formatDuration(new Date(task.completed_at) - new Date(task.created_at))
-    : null;
+  // How long the task was given vs how long it took — measured from the hand-in, so that a
+  // slow acceptance never inflates the numbers.
+  const timing = getTaskTiming(task);
   const tagsList = normalizeTags(task.tags);
   const taskNum = getTaskNumber(task, allTasks);
 
@@ -70,12 +68,15 @@ export default function TaskCard({ task, profiles = [], allTasks = [], onClick, 
       {deadlineStatus && (
         <div className={`task-deadline ${deadlineStatus.class}`}>
           📅 {deadlineStatus.text}
+          {timing?.planned ? <span style={{ opacity: 0.75 }}> · дано {timing.planned} дн</span> : null}
         </div>
       )}
 
-      {completionDuration && (
-        <div className="task-deadline safe">
-          ✅ Выполнено за {completionDuration}
+      {isDone && timing?.actual && (
+        <div className={`task-deadline ${timing.overdue > 0 ? 'overdue' : 'safe'}`}>
+          {timing.overdue > 0 ? '🔴' : '✅'} Выполнено за {timing.actual} дн
+          {timing.planned ? <span style={{ opacity: 0.75 }}> из {timing.planned} дн</span> : null}
+          {timing.overdue > 0 ? <span> · просрочка {timing.overdue} дн</span> : null}
         </div>
       )}
       

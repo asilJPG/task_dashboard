@@ -16,6 +16,7 @@ export default function TaskFormModal({ isOpen, onClose, onSave, task, profiles 
   const [progress, setProgress] = useState(0);
   const [tags, setTags] = useState([]);
   const [tagInput, setTagInput] = useState('');
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (task) {
@@ -82,8 +83,10 @@ export default function TaskFormModal({ isOpen, onClose, onSave, task, profiles 
     setTags(tags.filter(t => t !== tagToRemove));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    // The save is asynchronous and gave no feedback, so a second click created a duplicate task.
+    if (saving) return;
     if (assignees.length === 0) {
       showToast('Выберите хотя бы одного исполнителя', 'error');
       return;
@@ -112,8 +115,14 @@ export default function TaskFormModal({ isOpen, onClose, onSave, task, profiles 
     if (task?.id) {
       payload.id = task.id;
     }
-    onSave(payload);
-    onClose();
+
+    setSaving(true);
+    try {
+      await onSave(payload);
+      onClose();
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -278,8 +287,10 @@ export default function TaskFormModal({ isOpen, onClose, onSave, task, profiles 
             </div>
 
             <div className="modal-footer">
-              <button type="button" className="btn btn-secondary" onClick={onClose}>Отмена</button>
-              <button type="submit" className="btn btn-primary">{task ? 'Сохранить' : 'Создать задачу'}</button>
+              <button type="button" className="btn btn-secondary" onClick={onClose} disabled={saving}>Отмена</button>
+              <button type="submit" className="btn btn-primary" disabled={saving}>
+                {saving ? 'Сохранение…' : (task ? 'Сохранить' : 'Создать задачу')}
+              </button>
             </div>
           </form>
         </div>

@@ -30,6 +30,9 @@ export default function KanbanPage() {
   const [selectedEmployee, setSelectedEmployee] = useState('all');
   const [selectedTag, setSelectedTag] = useState('all');
   const [sortBy, setSortBy] = useState('created_desc');
+  // Filters are collapsed on phones by default: three full-width selects pushed the actual
+  // task list below the fold. On desktop CSS keeps them always visible.
+  const [filtersOpen, setFiltersOpen] = useState(false);
   
   const [comments, setComments] = useState({});
   const [histories, setHistories] = useState({});
@@ -237,9 +240,17 @@ export default function KanbanPage() {
   return (
     <div className="dashboard-container">
       <div className="board-toolbar" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }} className={filtersOpen ? 'toolbar-filters open' : 'toolbar-filters'}>
           <h2>📋 Доска задач</h2>
-          
+
+          <button
+            type="button"
+            className="btn btn-secondary filters-toggle"
+            onClick={() => setFiltersOpen(o => !o)}
+          >
+            {filtersOpen ? '▲ Скрыть фильтры' : '▼ Фильтры и сортировка'}
+          </button>
+
           {/* Employee Filter Select for Managers and Team */}
           {teamMembers.length > 0 && (
             <select

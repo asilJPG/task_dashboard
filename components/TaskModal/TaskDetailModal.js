@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { formatRelativeTime, getPriorityLabel, getStatusLabel } from '@/lib/utils';
+import { formatRelativeTime, formatDate, getPriorityLabel, getStatusLabel, getTaskTiming } from '@/lib/utils';
 
 export default function TaskDetailModal({
   isOpen, onClose, task, profiles = [], comments = [], history = [],
@@ -27,6 +27,8 @@ export default function TaskDetailModal({
   const assigneesList = Array.isArray(task.assignees) && task.assignees.length > 0
     ? task.assignees.map(id => profiles.find(p => p.id === id)).filter(Boolean)
     : (assignee ? [assignee] : []);
+
+  const timing = getTaskTiming(task);
 
   const currentUserProfile = profiles.find(p => p.id === currentUserId);
   const canEditOrDelete = task.created_by === currentUserId || currentUserProfile?.is_admin || currentUserProfile?.role === 'admin';
@@ -138,8 +140,26 @@ export default function TaskDetailModal({
             </div>
             <div className="detail-row">
               <span className="detail-label">Дедлайн:</span>
-              <span className="detail-value">{task.deadline || 'Не указан'}</span>
+              <span className="detail-value">
+                {task.deadline ? formatDate(task.deadline) : 'Не указан'}
+                {timing?.planned ? (
+                  <span style={{ color: 'var(--text-secondary)' }}> — на выполнение давалось {timing.planned} дн</span>
+                ) : null}
+              </span>
             </div>
+            {timing?.actual && (
+              <div className="detail-row">
+                <span className="detail-label">Факт:</span>
+                <span className="detail-value">
+                  <strong style={{ color: timing.overdue > 0 ? '#f85149' : '#34d399' }}>
+                    {task.status === 'done' ? 'Выполнено' : 'Сдано'} за {timing.actual} дн
+                  </strong>
+                  {timing.overdue > 0
+                    ? <span style={{ color: '#f85149' }}> — просрочено на {timing.overdue} дн</span>
+                    : <span style={{ color: '#34d399' }}> — в срок</span>}
+                </span>
+              </div>
+            )}
           </div>
 
           {task.description && (
