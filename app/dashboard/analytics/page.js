@@ -198,11 +198,17 @@ export default function AnalyticsPage() {
       return { ...profile, assignedTasks, completed, progress, byStatus, overdue, unfinished: assignedTasks.length - completed };
     }).filter(p => p.assignedTasks.length > 0);
 
+  // Naming the weakest performer is management information: an employee would only ever see
+  // themselves flagged, which is discouraging and tells them nothing about the team.
+  const canSeeTeamInsights = profile?.is_admin || profile?.role === 'admin' || profile?.role === 'manager';
+
   // Weakest performer: lowest completion rate, and with equal rates the one sitting on more
   // unfinished work. Needs a couple of tasks to judge, otherwise a single open task wins it.
-  const worstPerformer = [...assigneeStats]
-    .filter(p => p.assignedTasks.length >= 2)
-    .sort((a, b) => a.progress - b.progress || b.unfinished - a.unfinished)[0] || null;
+  const worstPerformer = canSeeTeamInsights
+    ? ([...assigneeStats]
+        .filter(p => p.assignedTasks.length >= 2)
+        .sort((a, b) => a.progress - b.progress || b.unfinished - a.unfinished)[0] || null)
+    : null;
 
   // Read from the freshly computed stats, so the open modal follows period changes and live edits.
   const selectedEmployee = assigneeStats.find(p => p.id === selectedEmployeeId) || null;
