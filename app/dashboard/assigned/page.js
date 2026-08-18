@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useTasks } from '@/hooks/useTasks';
 import TaskDetailModal from '@/components/TaskModal/TaskDetailModal';
+import TaskFormModal from '@/components/TaskModal/TaskFormModal';
 import TaskCard from '@/components/TaskCard/TaskCard';
 import { supabase } from '@/lib/supabase';
 
@@ -13,6 +14,7 @@ export default function AssignedTasksPage() {
   
   const [profiles, setProfiles] = useState([]);
   const [detailTask, setDetailTask] = useState(null);
+  const [editingTask, setEditingTask] = useState(null);
   const [comments, setComments] = useState({});
   const [histories, setHistories] = useState({});
 
@@ -128,6 +130,13 @@ export default function AssignedTasksPage() {
     }
   };
 
+  const handleSaveTask = async (taskData) => {
+    if (editingTask) {
+      await updateTask(editingTask.id, taskData);
+    }
+    setEditingTask(null);
+  };
+
   const handleTogglePin = async (taskId) => {
     const task = tasks.find(t => t.id === taskId);
     if (!task) return;
@@ -235,7 +244,7 @@ export default function AssignedTasksPage() {
           profiles={profiles}
           comments={comments[detailTask.id] || []}
           history={histories[detailTask.id] || []}
-          onEdit={() => {}}
+          onEdit={() => { setEditingTask(detailTask); setDetailTask(null); }}
           onDelete={async () => { await deleteTask(detailTask.id); setDetailTask(null); }}
           onComment={handleAddComment}
           onStatusChange={async (status) => {
@@ -249,6 +258,17 @@ export default function AssignedTasksPage() {
           onSharesChange={(shares) => handleSharesChange(detailTask.id, shares)}
           onClose={() => setDetailTask(null)}
           currentUserId={user?.id}
+        />
+      )}
+
+      {editingTask && (
+        <TaskFormModal
+          isOpen={!!editingTask}
+          task={editingTask}
+          profiles={profiles}
+          currentUser={user}
+          onSave={handleSaveTask}
+          onClose={() => setEditingTask(null)}
         />
       )}
     </div>
