@@ -1921,3 +1921,53 @@ body {
 }
 
 
+
+/* ---------- Toasts: non-blocking feedback ---------- */
+.toast-host {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 1400;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: min(360px, calc(100vw - 32px));
+  pointer-events: none;
+}
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid;
+  border-radius: 10px;
+  background: #161b22;
+  color: var(--text-primary);
+  font-size: 13px;
+  line-height: 1.4;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(10px);
+  cursor: pointer;
+  pointer-events: auto;
+  animation: toastIn 0.22s ease-out;
+}
+.toast-close {
+  color: var(--text-secondary);
+  font-size: 16px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+@keyframes toastIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 768px) {
+  /* Above the bottom navigation, never underneath it. */
+  .toast-host {
+    right: 12px;
+    left: 12px;
+    bottom: calc(74px + env(safe-area-inset-bottom));
+    max-width: none;
+  }
+}

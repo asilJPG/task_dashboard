@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { normalizeTags } from '@/lib/utils';
+import { showToast } from '@/components/UI/Toast';
 
 export default function TaskFormModal({ isOpen, onClose, onSave, task, profiles = [], currentUser }) {
   const [title, setTitle] = useState('');
@@ -84,7 +85,7 @@ export default function TaskFormModal({ isOpen, onClose, onSave, task, profiles 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (assignees.length === 0) {
-      alert('Пожалуйста, выберите хотя бы одного исполнителя.');
+      showToast('Выберите хотя бы одного исполнителя', 'error');
       return;
     }
     const finalResponsible = responsibleId || assignees[0];

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
+import { showToast } from '@/components/UI/Toast';
 import { useRouter } from 'next/navigation';
 
 
@@ -84,7 +85,7 @@ export default function AdminPage() {
     if (!updateError) {
       fetchUsers();
     } else {
-      alert('Ошибка при изменении роли: ' + (updateError.message || 'Не удалось обновить'));
+      showToast('Ошибка при изменении роли: ' + (updateError.message || 'Не удалось обновить'), 'error');
     }
   };
 
@@ -94,7 +95,7 @@ export default function AdminPage() {
       if (!delError) {
         fetchUsers();
       } else {
-        alert('Ошибка при удалении пользователя: ' + (delError.message || 'Не удалось удалить'));
+        showToast('Ошибка при удалении: ' + (delError.message || 'Не удалось удалить'), 'error');
       }
     }
   };

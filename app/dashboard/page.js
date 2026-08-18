@@ -9,6 +9,8 @@ import TaskFormModal from '@/components/TaskModal/TaskFormModal';
 import TaskDetailModal from '@/components/TaskModal/TaskDetailModal';
 import StopReasonModal from '@/components/TaskModal/StopReasonModal';
 import TeamModal from '@/components/TeamModal/TeamModal';
+import ConfirmDialog from '@/components/UI/ConfirmDialog';
+import { showToast } from '@/components/UI/Toast';
 import { supabase } from '@/lib/supabase';
 import { normalizeTags } from '@/lib/utils';
 
@@ -23,6 +25,7 @@ export default function KanbanPage() {
   const [editingTask, setEditingTask] = useState(null);
   const [detailTask, setDetailTask] = useState(null);
   const [stopTask, setStopTask] = useState(null);
+  const [taskToDelete, setTaskToDelete] = useState(null);
   const [showTeamModal, setShowTeamModal] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState('all');
   const [selectedTag, setSelectedTag] = useState('all');
@@ -131,7 +134,7 @@ export default function KanbanPage() {
                                  profile?.role === 'manager';
 
     if (!isResponsibleOrAdmin) {
-      alert('🔒 Изменять статус этой задачи может только ответственный сотрудник!');
+      showToast('Изменять статус этой задачи может только ответственный сотрудник', 'error');
       return;
     }
 
@@ -141,13 +144,17 @@ export default function KanbanPage() {
     }
 
     if (newStatus === 'done' && !(profile?.is_admin || profile?.role === 'admin' || profile?.role === 'manager')) {
-      alert('🔒 Принять задачу может только руководитель. Отправьте её на рассмотрение — статус «🔍 На рассмотрении».');
+      showToast('Принять задачу может только руководитель — отправьте её на проверку', 'error');
       return;
     }
 
     const res = await changeStatus(taskId, newStatus);
     if (res?.error) {
-      alert(`Не удалось изменить статус: ${res.error.message || res.error}`);
+      showToast(`Не удалось изменить статус: ${res.error.message || res.error}`, 'error');
+    } else if (newStatus === 'review') {
+      showToast('Задача отправлена на проверку руководителю', 'success');
+    } else if (newStatus === 'done') {
+      showToast('Задача принята', 'success');
     }
   };
 
@@ -159,13 +166,19 @@ export default function KanbanPage() {
   };
 
   const handleSaveTask = async (taskData) => {
-    if (editingTask) {
-      await updateTask(editingTask.id, taskData);
-    } else {
-      await createTask(taskData);
-    }
+    const wasEditing = !!editingTask;
+    const { error } = wasEditing
+      ? await updateTask(editingTask.id, taskData)
+      : await createTask(taskData);
+
     setShowTaskForm(false);
     setEditingTask(null);
+
+    if (error) {
+      showToast(`Не удалось сохранить задачу: ${error.message || error}`, 'error');
+    } else {
+      showToast(wasEditing ? 'Изменения сохранены' : 'Задача создана', 'success');
+    }
   };
 
   const handleAddComment = async (taskId, content) => {
@@ -340,7 +353,7 @@ export default function KanbanPage() {
           comments={comments[detailTask.id] || []}
           history={histories[detailTask.id] || []}
           onEdit={() => { setEditingTask(detailTask); setShowTaskForm(true); setDetailTask(null); }}
-          onDelete={async () => { await deleteTask(detailTask.id); setDetailTask(null); }}
+          onDelete={() => setTaskToDelete(detailTask)}
           onComment={handleAddComment}
           onStatusChange={(status) => handleStatusChange(detailTask.id, status)}
           onProgressChange={(progress) => handleProgressChange(detailTask.id, progress)}
@@ -360,6 +373,19 @@ export default function KanbanPage() {
           onClose={() => setStopTask(null)}
         />
       )}
+
+      <ConfirmDialog
+        isOpen={!!taskToDelete}
+        title="Удалить задачу?"
+        message={taskToDelete ? `Задача №${taskToDelete.task_number} «${taskToDelete.title}» будет удалена вместе с комментариями и историей.` : ''}
+        confirmLabel="Удалить задачу"
+        onConfirm={async () => {
+          const { error } = await deleteTask(taskToDelete.id);
+          setDetailTask(null);
+          showToast(error ? `Не удалось удалить: ${error.message || error}` : 'Задача удалена', error ? 'error' : 'success');
+        }}
+        onClose={() => setTaskToDelete(null)}
+      />
     </div>
   );
 }

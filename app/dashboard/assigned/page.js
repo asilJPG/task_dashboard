@@ -6,6 +6,8 @@ import { useTasks } from '@/hooks/useTasks';
 import TaskDetailModal from '@/components/TaskModal/TaskDetailModal';
 import TaskFormModal from '@/components/TaskModal/TaskFormModal';
 import TaskCard from '@/components/TaskCard/TaskCard';
+import ConfirmDialog from '@/components/UI/ConfirmDialog';
+import { showToast } from '@/components/UI/Toast';
 import { supabase } from '@/lib/supabase';
 
 export default function AssignedTasksPage() {
@@ -15,6 +17,7 @@ export default function AssignedTasksPage() {
   const [profiles, setProfiles] = useState([]);
   const [detailTask, setDetailTask] = useState(null);
   const [editingTask, setEditingTask] = useState(null);
+  const [taskToDelete, setTaskToDelete] = useState(null);
   const [comments, setComments] = useState({});
   const [histories, setHistories] = useState({});
 
@@ -132,7 +135,8 @@ export default function AssignedTasksPage() {
 
   const handleSaveTask = async (taskData) => {
     if (editingTask) {
-      await updateTask(editingTask.id, taskData);
+      const { error } = await updateTask(editingTask.id, taskData);
+      showToast(error ? `Не удалось сохранить: ${error.message || error}` : 'Изменения сохранены', error ? 'error' : 'success');
     }
     setEditingTask(null);
   };
@@ -245,11 +249,12 @@ export default function AssignedTasksPage() {
           comments={comments[detailTask.id] || []}
           history={histories[detailTask.id] || []}
           onEdit={() => { setEditingTask(detailTask); setDetailTask(null); }}
-          onDelete={async () => { await deleteTask(detailTask.id); setDetailTask(null); }}
+          onDelete={() => setTaskToDelete(detailTask)}
           onComment={handleAddComment}
           onStatusChange={async (status) => {
             const res = await changeStatus(detailTask.id, status);
-            if (res?.error) alert(`Не удалось изменить статус: ${res.error.message || res.error}`);
+            if (res?.error) showToast(`Не удалось изменить статус: ${res.error.message || res.error}`, 'error');
+            else if (status === 'review') showToast('Задача отправлена на проверку руководителю', 'success');
           }}
           onProgressChange={(progress) => handleProgressChange(detailTask.id, progress)}
           onTogglePin={() => handleTogglePin(detailTask.id)}
@@ -260,6 +265,19 @@ export default function AssignedTasksPage() {
           currentUserId={user?.id}
         />
       )}
+
+      <ConfirmDialog
+        isOpen={!!taskToDelete}
+        title="Удалить задачу?"
+        message={taskToDelete ? `Задача №${taskToDelete.task_number} «${taskToDelete.title}» будет удалена вместе с комментариями и историей.` : ''}
+        confirmLabel="Удалить задачу"
+        onConfirm={async () => {
+          const { error } = await deleteTask(taskToDelete.id);
+          setDetailTask(null);
+          showToast(error ? `Не удалось удалить: ${error.message || error}` : 'Задача удалена', error ? 'error' : 'success');
+        }}
+        onClose={() => setTaskToDelete(null)}
+      />
 
       {editingTask && (
         <TaskFormModal

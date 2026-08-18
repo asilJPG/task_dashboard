@@ -4,6 +4,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import Header from '@/components/Header/Header';
+import ToastHost from '@/components/UI/Toast';
 
 export default function DashboardLayout({ children }) {
   const { user, loading } = useAuth();
@@ -29,6 +30,7 @@ export default function DashboardLayout({ children }) {
       <main className="main-content">
         {children}
       </main>
+      <ToastHost />
     </>
   );
 }
