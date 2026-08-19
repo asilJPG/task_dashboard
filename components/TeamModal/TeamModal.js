@@ -1,8 +1,10 @@
 'use client';
 
 import React from 'react';
+import { useModalBehavior } from '@/hooks/useModalBehavior';
 
 export default function TeamModal({ isOpen, onClose, profiles = [], tasks = [], currentUserId, onSelectEmployee }) {
+  useModalBehavior(isOpen, onClose);
   if (!isOpen) return null;
 
   // Filter out admin and current user

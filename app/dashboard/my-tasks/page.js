@@ -12,7 +12,7 @@ import { supabase } from '@/lib/supabase';
 
 export default function MyTasksPage() {
   const { user, profile } = useAuth();
-  const { tasks, updateTask, changeStatus, deleteTask, addComment, setDifficulty, setQuality, setAssigneeShares } = useTasks(user?.id, profile);
+  const { tasks, updateTask, changeStatus, updateProgress, deleteTask, addComment, setDifficulty, setQuality, setAssigneeShares, setDeadline } = useTasks(user?.id, profile);
   
   const [activeFilter, setActiveFilter] = useState('all');
   const [profiles, setProfiles] = useState([]);
@@ -130,9 +130,12 @@ export default function MyTasksPage() {
   };
 
   const handleProgressChange = async (taskId, progress) => {
-    await updateTask(taskId, { progress });
+    await updateProgress(taskId, progress);
     if (detailTask && detailTask.id === taskId) {
       setDetailTask(prev => ({ ...prev, progress }));
+    }
+    if (progress === 100) {
+      showToast('Прогресс 100% — задача отправлена на проверку', 'success');
     }
   };
 
@@ -158,6 +161,18 @@ export default function MyTasksPage() {
     if (detailTask && detailTask.id === taskId) {
       setDetailTask(prev => ({ ...prev, difficulty }));
     }
+  };
+
+  const handleDeadlineChange = async (taskId, deadline) => {
+    const { error } = await setDeadline(taskId, deadline);
+    if (error) {
+      showToast('Не удалось изменить срок', 'error');
+      return;
+    }
+    if (detailTask && detailTask.id === taskId) {
+      setDetailTask(prev => ({ ...prev, deadline }));
+    }
+    showToast(deadline ? 'Срок выполнения обновлён' : 'Срок убран', 'success');
   };
 
   const handleQualityChange = async (taskId, quality) => {
@@ -272,6 +287,7 @@ export default function MyTasksPage() {
           onTogglePin={() => handleTogglePin(detailTask.id)}
           onDifficultyChange={(difficulty) => handleDifficultyChange(detailTask.id, difficulty)}
           onQualityChange={(quality) => handleQualityChange(detailTask.id, quality)}
+          onDeadlineChange={(deadline) => handleDeadlineChange(detailTask.id, deadline)}
           onSharesChange={(shares) => handleSharesChange(detailTask.id, shares)}
           onClose={() => setDetailTask(null)}
           currentUserId={user?.id}

@@ -51,7 +51,10 @@ const SearchBar = () => {
               style={{ textDecoration: 'none', display: 'flex' }}
             >
               <div style={{ flex: 1 }}>
-                <div className="search-result-title">{res.title}</div>
+                <div className="search-result-title">
+                  <span style={{ color: '#38bdf8', fontWeight: 700, marginRight: '5px' }}>№{res.task_number}</span>
+                  {res.title}
+                </div>
                 <div className="search-result-meta">Прогресс: {res.progress}%</div>
               </div>
               <span className={`status-badge ${res.status}`} style={{ fontSize: '10px', height: 'fit-content' }}>

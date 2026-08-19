@@ -22,9 +22,21 @@ export function useSearch(userId, profile) {
       try {
         let queryBuilder = supabase.from('tb_tasks').select('*');
         if (!isManagerOrAdmin) {
-          queryBuilder = queryBuilder.or(`created_by.eq.${userId},assigned_to.eq.${userId}`);
+          // Also covers tasks where the person is one of several assignees or the responsible
+          // one — previously those were invisible to their own search.
+          queryBuilder = queryBuilder.or(
+            `created_by.eq.${userId},assigned_to.eq.${userId},responsible_id.eq.${userId},assignees.cs.{${userId}}`
+          );
         }
-        queryBuilder = queryBuilder.or(`title.ilike.%${query}%,description.ilike.%${query}%,tags.cs.{${query}}`);
+
+        // "12" or "№12" looks up the task number; anything else searches the text.
+        const raw = query.trim();
+        const digits = raw.replace(/^[№#]\s*/, '');
+        const isNumberLookup = /^\d+$/.test(digits);
+
+        queryBuilder = isNumberLookup
+          ? queryBuilder.or(`task_number.eq.${digits},title.ilike.%${raw}%,description.ilike.%${raw}%`)
+          : queryBuilder.or(`title.ilike.%${raw}%,description.ilike.%${raw}%,tags.cs.{${raw}}`);
 
         const { data, error } = await queryBuilder;
 

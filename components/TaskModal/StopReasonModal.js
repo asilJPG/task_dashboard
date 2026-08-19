@@ -1,8 +1,10 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useModalBehavior } from '@/hooks/useModalBehavior';
 
 export default function StopReasonModal({ isOpen, onClose, onConfirm }) {
+  useModalBehavior(isOpen, onClose);
   const [reason, setReason] = useState('');
 
   if (!isOpen) return null;

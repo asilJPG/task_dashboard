@@ -1,10 +1,14 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { normalizeTags } from '@/lib/utils';
 import { showToast } from '@/components/UI/Toast';
+import { useModalBehavior, useAutoFocus } from '@/hooks/useModalBehavior';
 
 export default function TaskFormModal({ isOpen, onClose, onSave, task, profiles = [], currentUser }) {
+  const titleRef = useRef(null);
+  useModalBehavior(isOpen, onClose);
+  useAutoFocus(isOpen, titleRef);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [assignedTo, setAssignedTo] = useState('');
@@ -12,7 +16,6 @@ export default function TaskFormModal({ isOpen, onClose, onSave, task, profiles 
   const [responsibleId, setResponsibleId] = useState('');
   const [createdBy, setCreatedBy] = useState('');
   const [priority, setPriority] = useState('medium');
-  const [deadline, setDeadline] = useState('');
   const [progress, setProgress] = useState(0);
   const [tags, setTags] = useState([]);
   const [tagInput, setTagInput] = useState('');
@@ -29,7 +32,6 @@ export default function TaskFormModal({ isOpen, onClose, onSave, task, profiles 
       setAssignedTo(task.assigned_to || initialAssignees[0] || '');
       setResponsibleId(task.responsible_id || task.assigned_to || initialAssignees[0] || '');
       setPriority(task.priority || 'medium');
-      setDeadline(task.deadline || '');
       setProgress(task.progress || 0);
       setTags(normalizeTags(task.tags));
       setCreatedBy(task.created_by || '');
@@ -40,7 +42,6 @@ export default function TaskFormModal({ isOpen, onClose, onSave, task, profiles 
       setAssignees(currentUser?.id ? [currentUser.id] : []);
       setResponsibleId(currentUser?.id || '');
       setPriority('medium');
-      setDeadline('');
       setProgress(0);
       setTags([]);
       setCreatedBy(currentUser?.id || '');
@@ -105,7 +106,6 @@ export default function TaskFormModal({ isOpen, onClose, onSave, task, profiles 
       assignees,
       responsible_id: finalResponsible,
       priority,
-      deadline: deadline || null,
       progress,
       tags: finalTags
     };
@@ -136,11 +136,12 @@ export default function TaskFormModal({ isOpen, onClose, onSave, task, profiles 
           <form onSubmit={handleSubmit}>
             <div className="form-group">
               <label className="form-label">Название *</label>
-              <input 
-                className="form-input" 
-                value={title} 
-                onChange={(e) => setTitle(e.target.value)} 
-                required 
+              <input
+                ref={titleRef}
+                className="form-input"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                required
               />
             </div>
             
@@ -226,15 +227,6 @@ export default function TaskFormModal({ isOpen, onClose, onSave, task, profiles 
               </div>
             </div>
 
-            <div className="form-group">
-              <label className="form-label">Дедлайн</label>
-              <input 
-                type="date" 
-                className="form-input" 
-                value={deadline} 
-                onChange={(e) => setDeadline(e.target.value)} 
-              />
-            </div>
 
             {task && (
               <div className="form-group">

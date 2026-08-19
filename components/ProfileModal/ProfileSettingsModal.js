@@ -2,8 +2,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { useModalBehavior } from '@/hooks/useModalBehavior';
 
 export default function ProfileSettingsModal({ isOpen, onClose }) {
+  useModalBehavior(isOpen, onClose);
   const { profile, updateProfile } = useAuth();
 
   const [name, setName] = useState('');

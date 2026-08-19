@@ -3,6 +3,7 @@
 import React from 'react';
 import { formatDate } from '@/lib/utils';
 import { RATING_CONFIG } from '@/lib/rating';
+import { useModalBehavior } from '@/hooks/useModalBehavior';
 
 /** Human label + colour for a task's deadline outcome. */
 function deadlineLabel(bucket, daysLate) {
@@ -13,6 +14,7 @@ function deadlineLabel(bucket, daysLate) {
 }
 
 export default function EmployeeRatingModal({ isOpen, onClose, row, monthLabel }) {
+  useModalBehavior(isOpen, onClose);
   if (!isOpen || !row) return null;
 
   const { profile, breakdown = [], openTasks = [] } = row;

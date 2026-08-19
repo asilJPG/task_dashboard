@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React from 'react';
+import { useModalBehavior } from '@/hooks/useModalBehavior';
 
 /**
  * Confirmation for actions that cannot be undone.
@@ -17,11 +18,7 @@ export default function ConfirmDialog({
   onConfirm,
   onClose
 }) {
-  useEffect(() => {
-    const onKey = (e) => { if (e.key === 'Escape') onClose(); };
-    if (isOpen) window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [isOpen, onClose]);
+  useModalBehavior(isOpen, onClose);
 
   if (!isOpen) return null;
 

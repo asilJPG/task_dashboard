@@ -1,23 +1,10 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React from 'react';
+import { useModalBehavior } from '@/hooks/useModalBehavior';
 
 export default function Modal({ isOpen, onClose, children, size = 'md' }) {
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.key === 'Escape') {
-        onClose();
-      }
-    };
-
-    if (isOpen) {
-      window.addEventListener('keydown', handleKeyDown);
-    }
-
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [isOpen, onClose]);
+  useModalBehavior(isOpen, onClose);
 
   if (!isOpen) return null;
 

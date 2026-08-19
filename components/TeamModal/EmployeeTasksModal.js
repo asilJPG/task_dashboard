@@ -2,6 +2,7 @@
 
 import React from 'react';
 import TaskCard from '../TaskCard/TaskCard';
+import { useModalBehavior } from '@/hooks/useModalBehavior';
 
 // Same order and colours as the analytics donut, so the two read as one picture.
 const STATUS_SECTIONS = [
@@ -13,6 +14,7 @@ const STATUS_SECTIONS = [
 ];
 
 export default function EmployeeTasksModal({ isOpen, onClose, employee, tasks = [], profiles = [], periodLabel }) {
+  useModalBehavior(isOpen, onClose);
   if (!isOpen || !employee) return null;
 
   const done = tasks.filter(t => t.status === 'done').length;

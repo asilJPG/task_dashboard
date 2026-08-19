@@ -2,13 +2,15 @@
 
 import React, { useState, useEffect } from 'react';
 import { formatRelativeTime, formatDate, getPriorityLabel, getStatusLabel, getTaskTiming } from '@/lib/utils';
+import { useModalBehavior } from '@/hooks/useModalBehavior';
 
 export default function TaskDetailModal({
   isOpen, onClose, task, profiles = [], comments = [], history = [],
   onEdit, onDelete, onComment, onStatusChange, onProgressChange, onTogglePin,
-  onDifficultyChange, onQualityChange, onSharesChange,
+  onDifficultyChange, onQualityChange, onSharesChange, onDeadlineChange,
   currentUserId
 }) {
+  useModalBehavior(isOpen, onClose);
   const [commentText, setCommentText] = useState('');
   const [localProgress, setLocalProgress] = useState(task?.progress || 0);
 
@@ -38,6 +40,12 @@ export default function TaskDetailModal({
   const canSetDifficulty = currentUserProfile?.is_admin || currentUserProfile?.role === 'admin' || currentUserProfile?.role === 'manager';
   // Only a manager closes a task: the assignee hands it in for review instead.
   const canAcceptTask = canSetDifficulty;
+
+  // The deadline belongs to whoever is doing the work; managers can correct it afterwards.
+  const isOnTask = task.assigned_to === currentUserId
+    || task.responsible_id === currentUserId
+    || (Array.isArray(task.assignees) && task.assignees.includes(currentUserId));
+  const canSetDeadline = isOnTask || canSetDifficulty;
 
   // Shown percentages: the manager's split when set, an even division otherwise.
   const sharePercents = {};
@@ -140,12 +148,31 @@ export default function TaskDetailModal({
             </div>
             <div className="detail-row">
               <span className="detail-label">Дедлайн:</span>
-              <span className="detail-value">
-                {task.deadline ? formatDate(task.deadline) : 'Не указан'}
-                {timing?.planned ? (
-                  <span style={{ color: 'var(--text-secondary)' }}> — на выполнение давалось {timing.planned} дн</span>
-                ) : null}
-              </span>
+              {canSetDeadline && onDeadlineChange ? (
+                <span className="detail-value" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                  <input
+                    type="date"
+                    className="form-input"
+                    style={{ width: 'auto', padding: '4px 8px', fontSize: '12px' }}
+                    value={task.deadline ? String(task.deadline).slice(0, 10) : ''}
+                    onChange={(e) => onDeadlineChange(e.target.value || null)}
+                  />
+                  {timing?.planned ? (
+                    <span style={{ color: 'var(--text-secondary)', fontSize: '11px' }}>давалось {timing.planned} дн</span>
+                  ) : (
+                    <span style={{ color: 'var(--text-secondary)', fontSize: '11px' }}>
+                      {canSetDifficulty ? 'Срок ставит исполнитель, вы можете его изменить' : 'Поставьте себе срок выполнения'}
+                    </span>
+                  )}
+                </span>
+              ) : (
+                <span className="detail-value">
+                  {task.deadline ? formatDate(task.deadline) : 'Не указан'}
+                  {timing?.planned ? (
+                    <span style={{ color: 'var(--text-secondary)' }}> — на выполнение давалось {timing.planned} дн</span>
+                  ) : null}
+                </span>
+              )}
             </div>
             {timing?.actual && (
               <div className="detail-row">

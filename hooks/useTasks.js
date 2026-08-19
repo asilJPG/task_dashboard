@@ -282,8 +282,28 @@ export function useTasks(userId, profile) {
     return { error: null };
   };
 
+  /**
+   * Progress drives the status, so the two can't drift apart:
+   *   any progress on a new task  → «В работе»
+   *   100%                        → «На рассмотрении» (handed in for review)
+   *
+   * The status change goes through changeStatus so that submitted_at is stamped and managers
+   * get their notification, exactly as if the button had been pressed.
+   */
   const updateProgress = async (taskId, progress) => {
-    return await updateTask(taskId, { progress });
+    const task = tasks.find(t => t.id === taskId);
+    if (!task) return { error: 'task not found' };
+
+    const result = await updateTask(taskId, { progress });
+    if (result.error) return result;
+
+    if (progress === 100 && task.status !== 'done' && task.status !== 'review') {
+      await changeStatus(taskId, 'review');
+    } else if (progress > 0 && progress < 100 && task.status === 'new') {
+      await changeStatus(taskId, 'in_progress');
+    }
+
+    return result;
   };
 
   const togglePin = async (taskId) => {
@@ -304,6 +324,23 @@ export function useTasks(userId, profile) {
       return { error: 'invalid difficulty' };
     }
     return await updateTask(taskId, { difficulty: value });
+  };
+
+  // The deadline is not set when the task is created: the person doing the work commits to a
+  // date themselves, and a manager can adjust it afterwards.
+  const setDeadline = async (taskId, deadline) => {
+    const task = tasks.find(t => t.id === taskId);
+    if (!task) return { error: 'task not found' };
+
+    const isOnTask = task.assigned_to === userId
+      || task.responsible_id === userId
+      || (Array.isArray(task.assignees) && task.assignees.includes(userId));
+
+    if (!isOnTask && !isManagerOrAdmin) {
+      console.warn('Unauthorized deadline change attempt.');
+      return { error: 'forbidden' };
+    }
+    return await updateTask(taskId, { deadline: deadline || null });
   };
 
   // Quality of the delivered work (1-5), judged by a manager when accepting the task.
@@ -377,5 +414,5 @@ export function useTasks(userId, profile) {
     return { data, error };
   };
 
-  return { tasks, loading, createTask, updateTask, deleteTask, changeStatus, updateProgress, togglePin, setDifficulty, setQuality, setAssigneeShares, addComment };
+  return { tasks, loading, createTask, updateTask, deleteTask, changeStatus, updateProgress, togglePin, setDifficulty, setQuality, setAssigneeShares, setDeadline, addComment };
 }
